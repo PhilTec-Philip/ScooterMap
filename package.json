@@ -1,0 +1,15 @@
+{
+  "name": "scootermap",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "db:bootstrap": "node scripts/bootstrap-db.js",
+    "db:seed": "node scripts/bootstrap-db.js --seed"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mysql2": "^3.14.1"
+  }
+}

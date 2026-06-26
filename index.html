@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ScooterMap</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQhLZw9Yp9qW2kG5S9Yg00bG89c7O4c="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <div>
+            <p class="eyebrow">Deutschlandkarte für Roller, Mofa und Moped</p>
+            <h1>ScooterMap</h1>
+          </div>
+        </div>
+        <form id="placeSearchForm" class="place-search" role="search" autocomplete="off">
+          <input id="placeSearchInput" type="search" placeholder="Ort suchen..." aria-label="Ort suchen" />
+          <button class="search-button" type="submit" aria-label="Ort suchen">⌕</button>
+          <div id="placeSearchResults" class="place-search-results" hidden></div>
+        </form>
+        <div class="topbar-actions">
+          <div class="segmented-control topbar-mode-switch two-up" role="radiogroup" aria-label="Modus">
+            <button class="app-mode-button is-active" type="button" data-app-mode="view">Anschauen</button>
+            <button class="app-mode-button" type="button" data-app-mode="edit">Bearbeiten</button>
+          </div>
+          <button id="locateButton" class="icon-button" type="button" title="Meine Position anzeigen" aria-label="Meine Position anzeigen">
+            <span aria-hidden="true">⌖</span>
+          </button>
+          <button id="resetButton" class="ghost-button" type="button">Demo zurücksetzen</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="panel" aria-label="ScooterMap Steuerung">
+          <section class="panel-section">
+            <div class="section-title">
+              <p>Neue Meldung</p>
+              <h2>Eintrag melden</h2>
+            </div>
+            <p class="muted">Wechsle in den Bearbeiten-Modus, um neue Marker oder Flächen zu setzen. Im Anschauen-Modus öffnest du nur bestehende Einträge.</p>
+
+            <form id="reportForm" class="report-form">
+              <fieldset class="draw-modes">
+                <legend>Markierungsart</legend>
+                <div class="segmented-control" role="radiogroup" aria-label="Markierungsart">
+                  <button class="mode-button is-active" type="button" data-mode="point">Marker</button>
+                  <button class="mode-button" type="button" data-mode="circle">Gebiet</button>
+                  <button class="mode-button" type="button" data-mode="polygon">Frei</button>
+                </div>
+                <p id="drawHelp" class="draw-help">Klicke auf die Karte, um einen Marker zu setzen.</p>
+                <div class="draw-actions">
+                  <button id="finishShapeButton" class="mini-button" type="button" disabled>Fläche abschließen</button>
+                  <button id="clearShapeButton" class="mini-button" type="button">Auswahl löschen</button>
+                </div>
+              </fieldset>
+
+              <label>
+                Kategorie
+                <select id="category" required>
+                  <option value="road">Fahrbahnproblem</option>
+                  <option value="safety">Sicherheitsstelle</option>
+                  <option value="community">Community-Tipp</option>
+                  <option value="warning">Warnung</option>
+                </select>
+              </label>
+
+              <label>
+                Typ
+                <select id="type" required></select>
+              </label>
+
+              <div class="grid-two">
+                <label>
+                  Schwere
+                  <select id="severity" required>
+                    <option value="low">Niedrig</option>
+                    <option value="medium">Mittel</option>
+                    <option value="high">Hoch</option>
+                  </select>
+                </label>
+
+                <label>
+                  Gültig
+                  <select id="duration" required>
+                    <option value="12h">12 Stunden</option>
+                    <option value="7d">1 Woche</option>
+                    <option value="30d">30 Tage</option>
+                    <option value="permanent">Dauerhaft</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                Beschreibung
+                <textarea id="description" rows="4" maxlength="240" placeholder="Kurz, sachlich, keine Namen oder personenbezogenen Daten." required></textarea>
+              </label>
+
+              <div class="coords">
+                <span>Auswahl</span>
+                <strong id="selectedPosition">Noch kein Punkt gewählt</strong>
+              </div>
+
+              <button class="primary-button" type="submit">Marker speichern</button>
+            </form>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-heading">
+              <div class="section-title">
+                <p>Kartenansicht</p>
+                <h2>Filter</h2>
+              </div>
+              <span id="reportCount">0 Einträge</span>
+            </div>
+            <div id="filters" class="filters"></div>
+          </section>
+        </aside>
+
+        <section class="map-area" aria-label="ScooterMap Karte">
+          <div id="map"></div>
+          <div id="mapHint" class="map-hint">Einträge anklicken, um Details zu sehen.</div>
+        </section>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="app.js"></script>
+  </body>
+</html>
