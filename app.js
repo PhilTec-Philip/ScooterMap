@@ -84,6 +84,8 @@ const detailsContent = document.querySelector("#detailsContent");
 const closeDetailsButton = document.querySelector("#closeDetailsButton");
 const reportsList = document.querySelector("#reportsList");
 const themeToggleButton = document.querySelector("#themeToggleButton");
+const filterCollapseButton = document.querySelector("#filterCollapseButton");
+const filtersWrapper = document.querySelector("#filtersWrapper");
 
 init();
 
@@ -137,6 +139,16 @@ function init() {
   filterToggleButton.addEventListener("click", toggleMobileFilters);
   closeDetailsButton.addEventListener("click", closeMobileDetails);
   sheetBackdrop.addEventListener("click", closeAllMobileSheets);
+
+  // Filter collapse toggle
+  if (filterCollapseButton && filtersWrapper) {
+    filterCollapseButton.addEventListener("click", () => {
+      const isCollapsed = filtersWrapper.classList.toggle("collapsed");
+      filterCollapseButton.classList.toggle("is-collapsed", isCollapsed);
+      filterCollapseButton.setAttribute("aria-label", isCollapsed ? "Filter einblenden" : "Filter ausblenden");
+      requestAnimationFrame(() => map.invalidateSize());
+    });
+  }
 
   map.on("click", handleMapClick);
   map.on("mousemove", handleMapMove);
@@ -563,11 +575,7 @@ function renderReports() {
     layer.bindPopup(makePopup(report));
     layer.on("click", (event) => {
       L.DomEvent.stop(event.originalEvent);
-      if (window.innerWidth <= 860) {
-        showDetailsSheet(report);
-      } else {
-        layer.openPopup();
-      }
+      showDetailsSheet(report);
     });
     layer.on("contextmenu", (event) => {
       L.DomEvent.stop(event.originalEvent);
@@ -946,7 +954,6 @@ function toggleMobileFilters() {
 }
 
 function openMobileForm() {
-  if (window.innerWidth > 860) return;
   const panel = document.querySelector(".panel");
   panel.classList.add("is-open");
   panel.classList.add("show-form");
@@ -1069,11 +1076,7 @@ function renderReportsList(visibleReports) {
       });
       
       if (layer) {
-        if (window.innerWidth <= 860) {
           showDetailsSheet(report);
-        } else {
-          layer.openPopup();
-        }
       }
     });
 

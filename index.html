@@ -123,9 +123,14 @@
                 <p>Kartenansicht</p>
                 <h2>Filter</h2>
               </div>
-              <span id="reportCount">0 Einträge</span>
+              <div class="section-heading-actions">
+                <span id="reportCount">0 Einträge</span>
+                <button id="filterCollapseButton" class="filter-collapse-btn" type="button" aria-label="Filter ein-/ausklappen" title="Filter ein-/ausklappen">▼</button>
+              </div>
             </div>
-            <div id="filters" class="filters"></div>
+            <div id="filtersWrapper" class="filters-wrapper">
+              <div id="filters" class="filters"></div>
+            </div>
           </section>
 
           <section id="reportListSection" class="panel-section">
