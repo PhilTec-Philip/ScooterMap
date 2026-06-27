@@ -54,10 +54,15 @@ const map = L.map("map", {
 
 L.control.zoom({ position: "bottomleft" }).addTo(map);
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+let baseLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
+
+let satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.esri.com/">Esri</a>'
+});
 
 const categorySelect = document.querySelector("#category");
 const typeSelect = document.querySelector("#type");
@@ -155,8 +160,12 @@ function init() {
   closePanelButton.addEventListener("click", closeMobileDrawer);
   filterToggleButton.addEventListener("click", toggleMobileFilters);
   closeDetailsButton.addEventListener("click", closeDetailsCard);
+  detailsCard.addEventListener("click", (e) => {
+    if (e.target === detailsCard) closeDetailsCard();
+  });
   nextStepButton.addEventListener("click", nextStepHandler);
   backStepButton.addEventListener("click", backStepHandler);
+  document.querySelector("#satelliteToggle").addEventListener("click", toggleSatellite);
 
   map.on("click", handleMapClick);
   map.on("mousemove", handleMapMove);
@@ -308,6 +317,7 @@ function toggleSeverityVisibility() {
 
 function startReporting() {
   isReporting = true;
+  closeDetailsCard();
   clearDraftShape();
   reportButton.classList.add("is-hidden");
   drawModes.classList.remove("is-disabled");
@@ -674,9 +684,9 @@ function renderReports() {
 
   visibleReports.forEach((report) => {
     const layer = makeReportLayer(report).addTo(map);
-    layer.bindPopup(makePopup(report));
     layer.on("click", (event) => {
       L.DomEvent.stop(event.originalEvent);
+      if (isReporting) cancelReporting();
       showDetailsCard(report);
     });
     layer.on("contextmenu", (event) => {
@@ -1050,6 +1060,7 @@ function toggleMobileFilters() {
   if (!isCurrentlyHidden) {
     panel.classList.add("show-filters");
     panel.classList.remove("show-form");
+    closeDetailsCard();
   }
 }
 
@@ -1058,6 +1069,33 @@ function openMobileForm() {
   panel.classList.remove("is-hidden");
   panel.classList.add("show-form");
   panel.classList.remove("show-filters");
+  closeDetailsCard();
+}
+
+let satelliteActive = false;
+
+function toggleSatellite() {
+  const btn = document.querySelector("#satelliteToggle");
+  satelliteActive = !satelliteActive;
+  if (satelliteActive) {
+    map.removeLayer(baseLayer);
+    satelliteLayer.addTo(map);
+    btn.classList.add("is-active");
+    btn.innerHTML = "🗺 Kartenansicht";
+  } else {
+    map.removeLayer(satelliteLayer);
+    baseLayer.addTo(map);
+    btn.classList.remove("is-active");
+    btn.innerHTML = "🛰 Satellitenansicht";
+  }
+}
+
+function openMobileForm() {
+  const panel = document.querySelector(".panel");
+  panel.classList.remove("is-hidden");
+  panel.classList.add("show-form");
+  panel.classList.remove("show-filters");
+  closeDetailsCard();
 }
 
 function closeDetailsCard() {
@@ -1065,6 +1103,8 @@ function closeDetailsCard() {
 }
 
 function showDetailsCard(report) {
+  const panel = document.querySelector(".panel");
+  panel.classList.add("is-hidden");
   closeDetailsCard();
   const vote = votes[report.id];
   const created = new Date(report.createdAt).toLocaleString("de-DE", {
@@ -1154,6 +1194,7 @@ function renderReportsList(visibleReports) {
       });
       
       if (layer) {
+          if (isReporting) cancelReporting();
           showDetailsCard(report);
       }
     });

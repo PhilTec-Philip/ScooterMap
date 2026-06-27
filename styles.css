@@ -407,6 +407,43 @@ h2 {
   letter-spacing: 0.05em;
 }
 
+.report-count {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.satellite-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.satellite-toggle:hover {
+  background: var(--soft);
+  border-color: var(--muted);
+}
+
+.satellite-toggle.is-active {
+  background: rgba(14, 168, 120, 0.1);
+  border-color: var(--green);
+  color: var(--green);
+}
+
 .muted {
   margin: 4px 0 8px;
   color: var(--muted);
@@ -1039,7 +1076,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin: 0 0 36px 16px !important;
+  margin: 0 0 16px 16px !important;
 }
 
 .leaflet-control-zoom a {
@@ -1208,21 +1245,34 @@ textarea {
     width: auto;
     max-width: none;
     max-height: 70vh;
+    padding: 14px 18px;
+    border-radius: var(--radius-lg);
   }
 
-  /* Report Button on Mobile */
-  .report-btn {
-    bottom: 16px;
-    padding: 10px 22px;
-    font-size: 14px;
+  .details-card-title {
+    font-size: 16px;
   }
 
-  .draw-help {
+  .details-card-meta {
+    margin-bottom: 10px;
+  }
+
+  .report-form {
+    gap: 24px;
+  }
+
+  label {
+    gap: 9px;
+  }
+
+  .grid-two {
+    gap: 18px;
+  }
+
+  .step-indicator {
     display: none;
   }
-
 }
-
 
 @media (max-width: 520px) {
   .panel {
@@ -1232,7 +1282,7 @@ textarea {
 
   .grid-two {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 20px;
   }
 }
 
@@ -1302,7 +1352,7 @@ textarea {
 
 @media (max-width: 768px) {
   .map-hint {
-    bottom: 68px;
+    bottom: 164px;
   }
 }
 
@@ -1329,8 +1379,8 @@ textarea {
 
 .details-card .panel-close-button {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
 }
 
 .details-card-title {
@@ -1338,7 +1388,7 @@ textarea {
   font-weight: 800;
   margin: 0 0 4px 0;
   color: var(--ink);
-  padding-right: 28px;
+  padding-right: 32px;
 }
 
 .details-card-meta {
@@ -1390,6 +1440,29 @@ textarea {
   font-weight: 600;
 }
 
+/* Mobile details card override (must be after base .details-card) */
+@media (max-width: 768px) {
+  .details-card {
+    top: 64px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+    max-height: 70vh;
+    padding: 14px 18px;
+    border-radius: var(--radius-lg);
+  }
+
+  .details-card-title {
+    font-size: 16px;
+    margin: 0 0 4px 0;
+  }
+
+  .details-card-meta {
+    margin: 0 0 10px 0;
+  }
+}
+
 /* Form steps: hidden on mobile, visible all at once on desktop */
 .form-step {
   display: none;
@@ -1397,6 +1470,15 @@ textarea {
 
 .form-step.is-active {
   display: block;
+}
+
+/* Mobile form step spacing (must be after base .form-step.is-active) */
+@media (max-width: 768px) {
+  .form-step.is-active {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
 }
 
 .form-nav {
@@ -1437,11 +1519,7 @@ textarea {
   }
 
   .report-btn {
-    bottom: 32px;
-  }
-
-  .panel-close-button {
-    display: none;
+    bottom: 16px;
   }
 }
 
