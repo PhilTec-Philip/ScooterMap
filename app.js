@@ -28,11 +28,6 @@ const categories = {
 const storageKey = "scootermap.reports.v1";
 const votesKey = "scootermap.votes.v1";
 const voterKey = "scootermap.voter.v1";
-const drawHelpText = {
-  point: "Klicke auf die Karte, um einen Marker zu setzen.",
-  circle: "Klicke den Mittelpunkt, bewege die Maus für den Radius, klicke nochmal zum Festlegen.",
-  polygon: "Klicke mehrere Punkte auf die Karte. Ab drei Punkten kannst du die Fläche abschließen."
-};
 
 let reports = loadReports();
 let votes = loadVotes();
@@ -70,7 +65,6 @@ const reportForm = document.querySelector("#reportForm");
 const selectedPosition = document.querySelector("#selectedPosition");
 const filters = document.querySelector("#filters");
 const reportCount = document.querySelector("#reportCount");
-const drawHelp = document.querySelector("#drawHelp");
 const toastEl = document.querySelector("#toast");
 let toastTimer = null;
 
@@ -99,7 +93,6 @@ const formSteps = document.querySelectorAll(".form-step");
 const nextStepButton = document.querySelector("#nextStepButton");
 const backStepButton = document.querySelector("#backStepButton");
 const submitStepButton = document.querySelector("#submitStepButton");
-const stepIndicator = document.querySelector("#stepIndicator");
 const desktopSubmitButton = document.querySelector("#desktopSubmitButton");
 const detailsCard = document.querySelector("#detailsCard");
 const detailsContent = document.querySelector("#detailsContent");
@@ -108,7 +101,6 @@ const closePanelButton = document.querySelector("#closePanelButton");
 const filterToggleButton = document.querySelector("#filterToggleButton");
 const reportsList = document.querySelector("#reportsList");
 const themeToggleButton = document.querySelector("#themeToggleButton");
-const mapHint = document.querySelector("#mapHint");
 let currentStep = 0;
 
 init();
@@ -230,7 +222,6 @@ function renderFilters() {
 function setDrawMode(mode) {
   drawMode = mode;
   clearDraftShape();
-  drawHelp.textContent = drawHelpText[mode];
 
   modeButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.mode === mode);
@@ -239,10 +230,21 @@ function setDrawMode(mode) {
 
 const isMobile = () => window.innerWidth < 769;
 
-function goToStep(step) {
+function goToStep(step, direction) {
+  const prevStep = currentStep;
   currentStep = step;
+  
   formSteps.forEach((el, i) => {
-    el.classList.toggle("is-active", i === step);
+    el.classList.remove("slide-out-left", "slide-in-right", "animate-in");
+    if (i === step) {
+      el.classList.add("is-active");
+      if (isMobile() && direction) {
+        el.classList.add("animate-in");
+        el.style.setProperty("--slide-from", direction === "next" ? "24px" : "-24px");
+      }
+    } else {
+      el.classList.remove("is-active");
+    }
   });
   updateStepButtons();
 }
@@ -252,18 +254,15 @@ function updateStepButtons() {
     nextStepButton.style.display = "";
     backStepButton.style.display = "none";
     submitStepButton.style.display = "none";
-    stepIndicator.textContent = "";
   } else if (currentStep < 3) {
     nextStepButton.style.display = "";
     backStepButton.style.display = currentStep > 1 ? "" : "none";
     submitStepButton.style.display = "none";
-    stepIndicator.textContent = currentStep + " / 3";
     nextStepButton.disabled = false;
   } else {
     nextStepButton.style.display = "none";
     backStepButton.style.display = "";
     submitStepButton.style.display = "";
-    stepIndicator.textContent = "3 / 3";
   }
 }
 
@@ -271,7 +270,6 @@ function afterGeometryPlaced() {
   if (isMobile()) {
     if (currentStep === 0) {
       nextStepButton.disabled = false;
-      if (mapHint) mapHint.textContent = "Weiter zur Kategorie";
     }
   } else {
     desktopSubmitButton.disabled = false;
@@ -282,8 +280,7 @@ function nextStepHandler() {
   if (currentStep >= 0 && currentStep < 3) {
     if (currentStep === 0) {
       if (!selectedGeometry) return;
-      if (mapHint) mapHint.classList.add("is-hidden");
-      goToStep(1);
+      goToStep(1, "next");
       return;
     }
     if (currentStep === 1 && (!categorySelect.value || !typeSelect.value)) return;
@@ -292,13 +289,13 @@ function nextStepHandler() {
       if (needsSeverity && !document.querySelector("#severity").value) return;
       if (!document.querySelector("#duration").value) return;
     }
-    goToStep(currentStep + 1);
+    goToStep(currentStep + 1, "next");
   }
 }
 
 function backStepHandler() {
   if (currentStep > 0) {
-    goToStep(currentStep - 1);
+    goToStep(currentStep - 1, "back");
   }
 }
 
@@ -334,20 +331,14 @@ function startReporting() {
     nextStepButton.disabled = true;
   } else {
     formSteps.forEach(el => el.classList.add("is-active"));
-  desktopSubmitButton.disabled = true;
-  if (mapHint) mapHint.classList.add("is-hidden");
-}
+    desktopSubmitButton.disabled = true;
+  }
 
   selectedPosition.textContent = "Wähle eine Markierungsart und klicke auf die Karte.";
-  drawHelp.textContent = drawHelpText.point;
   clearShapeButton.disabled = false;
   finishShapeButton.disabled = true;
 
   showToast("Klicke auf die Karte, um eine Position zu wählen.");
-  if (isMobile() && mapHint) {
-    mapHint.textContent = drawHelpText.point;
-    mapHint.classList.remove("is-hidden");
-  }
 }
 
 function cancelReporting() {
@@ -588,7 +579,7 @@ async function handleSubmit(event) {
   reportForm.reset();
   populateTypeOptions();
   clearDraftShape();
-  cancelReporting();
+  showSuccessConfirmation();
 
   if (apiAvailable) {
     try {
@@ -598,6 +589,29 @@ async function handleSubmit(event) {
       showToast("Server nicht erreichbar. Eintrag wurde nur lokal gespeichert.");
     }
   }
+}
+
+function showSuccessConfirmation() {
+  const form = document.querySelector("#reportForm");
+  const successState = document.querySelector("#successState");
+  const sectionTitle = document.querySelector("#reportFormSection .section-title");
+  const formIntro = document.querySelector("#reportFormSection > .muted");
+  const closeBtn = document.querySelector("#closePanelButton");
+
+  form.style.display = "none";
+  if (sectionTitle) sectionTitle.style.display = "none";
+  if (formIntro) formIntro.style.display = "none";
+  successState.classList.remove("is-hidden");
+  closeBtn.style.display = "none";
+
+  setTimeout(() => {
+    cancelReporting();
+    successState.classList.add("is-hidden");
+    form.style.display = "";
+    if (sectionTitle) sectionTitle.style.display = "";
+    if (formIntro) formIntro.style.display = "";
+    closeBtn.style.display = "";
+  }, 1800);
 }
 
 async function handlePlaceSearch(event) {
@@ -793,7 +807,17 @@ async function updateVote(id, field) {
       const updatedReport = await createRemoteVote(id, field);
       votes[id] = field;
       saveVotes();
+      if (updatedReport.disputes >= 5) {
+        await deleteRemoteReport(id);
+        reports = reports.filter((r) => r.id !== id);
+        saveReports();
+        renderReports();
+        closeDetailsCard();
+        showToast("Meldung wurde aufgrund zu vieler Bestätigungen gelöscht.");
+        return;
+      }
       reports = reports.map((report) => (report.id === id ? updatedReport : report));
+      reports = reports.filter((report) => report.disputes < 5);
       saveReports();
       renderReports();
       return;
@@ -807,6 +831,7 @@ async function updateVote(id, field) {
       }
 
       showToast("Server nicht erreichbar. Bewertung wurde nur lokal gespeichert.");
+      return;
     }
   }
 
@@ -824,9 +849,14 @@ async function updateVote(id, field) {
     };
   });
 
+  const deleted = reports.some(r => r.id === id && r.disputes >= 5);
   reports = reports.filter((report) => report.disputes < 5);
   saveReports();
   renderReports();
+  if (deleted) {
+    closeDetailsCard();
+    showToast("Meldung wurde aufgrund zu vieler Bestätigungen gelöscht.");
+  }
 }
 
 function locateUser() {
@@ -879,10 +909,6 @@ function clearDraftShape() {
   updateSelectionLabel();
   if (isMobile()) {
     goToStep(0);
-    if (mapHint) {
-      mapHint.textContent = drawHelpText[drawMode];
-      mapHint.classList.remove("is-hidden");
-    }
   }
 }
 
@@ -945,6 +971,7 @@ async function syncReportsFromApi(options = {}) {
       reports = remoteReports;
     }
 
+    reports = reports.filter((report) => report.disputes < 5);
     saveReports();
     renderReports();
     if (!silent) {
@@ -990,6 +1017,18 @@ async function createRemoteVote(id, field) {
   }
 
   return response.json();
+}
+
+async function deleteRemoteReport(id) {
+  const response = await fetch(`/api/reports/${encodeURIComponent(id)}`, {
+    method: "DELETE"
+  });
+
+  if (!response.ok && response.status !== 404) {
+    const error = new Error(`API responded with ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
 }
 
 function getOrCreateVoterId() {
@@ -1088,14 +1127,6 @@ function toggleSatellite() {
     btn.classList.remove("is-active");
     btn.innerHTML = "🛰 Satellitenansicht";
   }
-}
-
-function openMobileForm() {
-  const panel = document.querySelector(".panel");
-  panel.classList.remove("is-hidden");
-  panel.classList.add("show-form");
-  panel.classList.remove("show-filters");
-  closeDetailsCard();
 }
 
 function closeDetailsCard() {

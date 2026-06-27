@@ -5,14 +5,16 @@ Community-Karte für Roller-, Mofa- und Mopedstrecken in Deutschland.
 ## Funktionen
 
 - OpenStreetMap-Karte mit Leaflet
-- Anschauen- und Bearbeiten-Modus
-- Ortssuche über OpenStreetMap/Nominatim
+- **"Meldung einreichen"** – geführter Schritt-für-Schritt-Wizard auf Mobile, übersichtliches Formular auf Desktop
 - Marker, Kreis-Gebiete und freie Flächen
-- Kategorien für Fahrbahn, Sicherheit, Community und Warnungen
+- Kategorien: Fahrbahn, Sicherheit, Community, Warnungen + Schweregrad
+- Details als schwebende Card (kein Bottom-Sheet)
+- Voting: "Existiert noch" / "Nicht mehr da" – bei 5 Disputes wird der Eintrag gelöscht
+- Satellitenansicht (ESRI) umschaltbar
+- Dark Mode
 - Geräteübergreifende Speicherung über MySQL/MariaDB
-- automatischer Sync zwischen Geräten über die API
-- lokaler `localStorage`-Fallback, wenn die API nicht läuft
-- einfache Bewertung: `Existiert noch` / `Nicht mehr da`
+- Automatischer Sync zwischen Geräten über die API
+- Lokaler `localStorage`-Fallback, wenn die API nicht läuft
 
 ## Datenbank
 

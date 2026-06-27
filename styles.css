@@ -89,8 +89,11 @@ body {
 
 button,
 select,
-textarea {
+textarea,
+input {
   font: inherit;
+  font-size: 16px;
+  touch-action: manipulation;
 }
 
 /* Scrollbar styles for list and panel */
@@ -188,6 +191,7 @@ textarea {
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.98);
   box-shadow: var(--shadow-strong);
+  animation: fadeIn 0.2s ease both;
 }
 
 .place-result {
@@ -202,11 +206,13 @@ textarea {
   cursor: pointer;
   text-align: left;
   font-size: 13px;
-  transition: background 120ms ease;
+  transition: background 160ms ease, transform 160ms ease;
 }
 
-.place-result:last-child {
-  border-bottom: 0;
+.place-result:hover {
+  background: var(--soft);
+  transform: translateX(4px);
+}
 }
 
 .place-result:hover {
@@ -280,7 +286,7 @@ h2 {
 .icon-button:active,
 .ghost-button:active,
 .primary-button:active {
-  transform: translateY(0);
+  transform: scale(0.96);
 }
 
 .icon-button {
@@ -340,15 +346,17 @@ h2 {
   overflow-y: auto;
   display: block;
   border: 1px solid var(--line);
-  transition: opacity 0.25s ease, visibility 0.25s ease;
   visibility: visible;
   opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease;
 }
 
 .panel.is-hidden {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
+  transform: translateX(-12px);
 }
 
 .panel-close-button {
@@ -491,13 +499,14 @@ legend {
   color: var(--muted);
   cursor: pointer;
   font-weight: 750;
-  transition: all 120ms ease;
+  transition: all 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mode-button.is-active {
   background: var(--surface);
   color: var(--ink);
   box-shadow: 0 6px 16px rgba(16, 24, 21, 0.06);
+  transform: scale(1.02);
 }
 
 .draw-modes.is-disabled {
@@ -509,12 +518,6 @@ legend {
   cursor: not-allowed;
 }
 
-.draw-help {
-  margin: 9px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
-}
 
 .draw-actions {
   display: grid;
@@ -626,7 +629,7 @@ textarea {
   padding: 8px 10px;
   border-radius: 10px;
   background: var(--soft);
-  transition: all 120ms ease;
+  transition: all 160ms cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border: 1px solid transparent;
 }
@@ -634,6 +637,8 @@ textarea {
 .filter-row:hover {
   background: var(--surface);
   border-color: var(--line);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 24, 21, 0.06);
 }
 
 .filter-row input {
@@ -759,21 +764,35 @@ textarea {
   z-index: 998;
   border: 0;
   cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), background 160ms ease, box-shadow 160ms ease;
+  animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.floating-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.floating-btn:active {
+  transform: scale(0.92);
 }
 
 #themeToggleButton.floating-btn {
   bottom: 112px;
   right: 16px;
+  animation-delay: 0.05s;
 }
 
 #filterToggleButton.floating-btn {
   bottom: 64px;
   right: 16px;
+  animation-delay: 0.1s;
 }
 
 #locateButton.floating-btn {
   bottom: 16px;
   right: 16px;
+  animation-delay: 0.15s;
 }
 
 /* Map area fills workspace */
@@ -814,7 +833,7 @@ textarea {
   position: fixed;
   left: 50%;
   bottom: 72px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(0);
   z-index: 999;
   padding: 8px 20px;
   border-radius: 99px;
@@ -828,12 +847,13 @@ textarea {
   max-width: 85vw;
   text-align: center;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
 }
 
 .toast.is-visible {
   opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 .marker-dot {
@@ -842,7 +862,16 @@ textarea {
   border: 3px solid #fff;
   border-radius: 50%;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
-  transition: transform 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 150ms ease;
+}
+
+.marker-dot:hover {
+  transform: scale(1.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.marker-dot:active {
+  transform: scale(0.92);
 }
 
 .marker-dot:hover {
@@ -1268,10 +1297,6 @@ textarea {
   .grid-two {
     gap: 18px;
   }
-
-  .step-indicator {
-    display: none;
-  }
 }
 
 @media (max-width: 520px) {
@@ -1287,6 +1312,32 @@ textarea {
 }
 
 /* Report Button */
+/* Animations */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUpCentered {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
 .report-btn {
   position: absolute;
   bottom: 32px;
@@ -1305,8 +1356,9 @@ textarea {
   align-items: center;
   gap: 8px;
   box-shadow: 0 6px 20px rgba(26, 136, 69, 0.35);
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms ease;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms ease;
   white-space: nowrap;
+  animation: fadeSlideUpCentered 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .report-btn:hover {
@@ -1328,33 +1380,6 @@ textarea {
   line-height: 1;
 }
 
-/* Map hint floating over the map */
-.map-hint {
-  position: absolute;
-  bottom: 164px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 998;
-  padding: 8px 16px;
-  border-radius: 999px;
-  background: rgba(16, 24, 21, 0.85);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  pointer-events: none;
-  transition: opacity 200ms ease;
-}
-
-.map-hint.is-hidden {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .map-hint {
-    bottom: 164px;
-  }
-}
 
 /* Details Card */
 .details-card {
@@ -1370,11 +1395,17 @@ textarea {
   padding: 20px;
   overflow-y: auto;
   z-index: 1000;
-  transition: opacity 200ms ease;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 250ms cubic-bezier(0.4, 0, 0.2, 1), visibility 200ms ease;
 }
 
 .details-card.is-hidden {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px);
 }
 
 .details-card .panel-close-button {
@@ -1419,12 +1450,13 @@ textarea {
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: all 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .details-card-actions button:hover:not(:disabled) {
   background: var(--soft);
   border-color: var(--muted);
+  transform: translateY(-1px);
 }
 
 .details-card-actions button:disabled {
@@ -1464,12 +1496,69 @@ textarea {
 }
 
 /* Form steps: hidden on mobile, visible all at once on desktop */
+
+.success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.success-state.is-hidden {
+  display: none;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 32px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  animation-delay: 0.1s;
+}
+
+.success-state h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: var(--ink);
+}
+
 .form-step {
   display: none;
 }
 
 .form-step.is-active {
   display: block;
+}
+
+/* Form step slide transitions */
+.form-step.slide-out-left {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+.form-step.slide-in-right {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.form-step.is-active.animate-in {
+  animation: stepSlideIn 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes stepSlideIn {
+  from { opacity: 0; transform: translateX(var(--slide-from, 24px)); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* Mobile form step spacing (must be after base .form-step.is-active) */
@@ -1490,14 +1579,6 @@ textarea {
 
 .form-nav .mini-button {
   flex-shrink: 0;
-}
-
-.step-indicator {
-  flex: 1;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
 }
 
 #desktopSubmitButton {
