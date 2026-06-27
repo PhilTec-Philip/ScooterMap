@@ -28,12 +28,6 @@
           <div id="placeSearchResults" class="place-search-results" hidden></div>
         </form>
       </header>
-      <div class="topbar-actions">
-        <div class="segmented-control topbar-mode-switch two-up" role="radiogroup" aria-label="Modus">
-          <button class="app-mode-button is-active" type="button" data-app-mode="view">Anschauen</button>
-          <button class="app-mode-button" type="button" data-app-mode="edit">Bearbeiten</button>
-        </div>
-      </div>
 
       <main class="workspace">
         <aside class="panel is-hidden" aria-label="ScooterMap Steuerung">
@@ -44,70 +38,79 @@
               <p>Neue Meldung</p>
               <h2>Eintrag melden</h2>
             </div>
-            <p class="muted">Wechsle in den Bearbeiten-Modus, um neue Marker oder Flächen zu setzen. Im Anschauen-Modus öffnest du nur bestehende Einträge.</p>
+            <p class="muted">Wähle eine Markierungsart und klicke auf die Karte, um eine Position festzulegen.</p>
 
             <form id="reportForm" class="report-form">
-              <fieldset class="draw-modes">
-                <legend>Markierungsart</legend>
-                <div class="segmented-control" role="radiogroup" aria-label="Markierungsart">
-                  <button class="mode-button is-active" type="button" data-mode="point">Marker</button>
-                  <button class="mode-button" type="button" data-mode="circle">Gebiet</button>
-                  <button class="mode-button" type="button" data-mode="polygon">Frei</button>
-                </div>
-                <p id="drawHelp" class="draw-help">Klicke auf die Karte, um einen Marker zu setzen.</p>
-                <div class="draw-actions">
-                  <button id="finishShapeButton" class="mini-button" type="button" disabled>Fläche abschließen</button>
-                  <button id="clearShapeButton" class="mini-button" type="button">Auswahl löschen</button>
-                </div>
-              </fieldset>
+              <div id="drawStep" class="form-step" data-step="0">
+                <fieldset class="draw-modes">
+                  <legend>Markierungsart</legend>
+                  <div class="segmented-control" role="radiogroup" aria-label="Markierungsart">
+                    <button class="mode-button is-active" type="button" data-mode="point">Marker</button>
+                    <button class="mode-button" type="button" data-mode="circle">Gebiet</button>
+                    <button class="mode-button" type="button" data-mode="polygon">Frei</button>
+                  </div>
+                  <p id="drawHelp" class="draw-help">Klicke auf die Karte, um einen Marker zu setzen.</p>
+                  <div class="draw-actions">
+                    <button id="finishShapeButton" class="mini-button" type="button" disabled>Fläche abschließen</button>
+                    <button id="clearShapeButton" class="mini-button" type="button">Auswahl löschen</button>
+                  </div>
+                </fieldset>
+              </div>
 
-              <label>
-                Kategorie
-                <select id="category" required>
-                  <option value="road">Fahrbahnproblem</option>
-                  <option value="safety">Sicherheitsstelle</option>
-                  <option value="community">Community-Tipp</option>
-                  <option value="warning">Warnung</option>
-                </select>
-              </label>
-
-              <label>
-                Typ
-                <select id="type" required></select>
-              </label>
-
-              <div class="grid-two">
+              <div id="formStep1" class="form-step" data-step="1">
                 <label>
-                  Schwere
-                  <select id="severity" required>
-                    <option value="low">Niedrig</option>
-                    <option value="medium">Mittel</option>
-                    <option value="high">Hoch</option>
+                  Kategorie
+                  <select id="category" required>
+                    <option value="road">Fahrbahnproblem</option>
+                    <option value="safety">Sicherheitsstelle</option>
+                    <option value="community">Community-Tipp</option>
+                    <option value="warning">Warnung</option>
                   </select>
                 </label>
-
                 <label>
-                  Gültig
-                  <select id="duration" required>
-                    <option value="12h">12 Stunden</option>
-                    <option value="7d">1 Woche</option>
-                    <option value="30d">30 Tage</option>
-                    <option value="permanent">Dauerhaft</option>
-                  </select>
+                  Typ
+                  <select id="type" required></select>
                 </label>
               </div>
 
-              <label>
-                Beschreibung
-                <textarea id="description" rows="4" maxlength="240" placeholder="Kurz, sachlich, keine Namen oder personenbezogenen Daten." required></textarea>
-              </label>
-
-              <div class="coords">
-                <span>Auswahl</span>
-                <strong id="selectedPosition">Noch kein Punkt gewählt</strong>
+              <div id="formStep2" class="form-step" data-step="2">
+                <div class="grid-two">
+                  <label id="severityLabel">
+                    Schwere
+                    <select id="severity" required>
+                      <option value="low">Niedrig</option>
+                      <option value="medium">Mittel</option>
+                      <option value="high">Hoch</option>
+                    </select>
+                  </label>
+                  <label>
+                    Gültig
+                    <select id="duration" required>
+                      <option value="12h">12 Stunden</option>
+                      <option value="7d">1 Woche</option>
+                      <option value="30d">30 Tage</option>
+                      <option value="permanent">Dauerhaft</option>
+                    </select>
+                  </label>
+                </div>
               </div>
 
-              <button class="primary-button" type="submit">Marker speichern</button>
+              <div id="formStep3" class="form-step" data-step="3">
+                <label>
+                  Beschreibung
+                  <textarea id="description" rows="4" maxlength="240" placeholder="Kurz, sachlich, keine Namen oder personenbezogenen Daten." required></textarea>
+                </label>
+                <strong id="selectedPosition" style="display:none"></strong>
+              </div>
+
+              <div id="mobileFormNav" class="form-nav">
+                <button id="backStepButton" class="mini-button" type="button" style="display:none">Zurück</button>
+                <span id="stepIndicator" class="step-indicator"></span>
+                <button id="nextStepButton" class="primary-button" type="button">Weiter</button>
+                <button id="submitStepButton" class="primary-button" type="submit" style="display:none">Fertig</button>
+              </div>
+
+              <button id="desktopSubmitButton" class="primary-button" type="submit">Fertig</button>
             </form>
           </section>
 
@@ -144,19 +147,17 @@
           <button id="themeToggleButton" class="icon-button floating-btn" type="button" title="Farbschema wechseln" aria-label="Farbschema wechseln">
             <span aria-hidden="true">🌙</span>
           </button>
+          <button id="reportButton" class="report-btn" type="button">
+            <span aria-hidden="true">+</span> Meldung einreichen
+          </button>
+          <div id="mapHint" class="map-hint is-hidden"></div>
+          <div id="detailsCard" class="details-card is-hidden">
+            <button id="closeDetailsButton" class="panel-close-button" type="button" aria-label="Schließen">×</button>
+            <div id="detailsContent"></div>
+          </div>
           <div id="toast" class="toast" hidden></div>
         </section>
       </main>
-    </div>
-
-    <div id="sheetBackdrop" class="bottom-sheet-backdrop" hidden></div>
-
-    <div id="detailsSheet" class="bottom-sheet" hidden>
-      <div class="bottom-sheet-header">
-        <div class="bottom-sheet-handle"></div>
-        <button id="closeDetailsButton" class="close-button" type="button" aria-label="Schließen">×</button>
-      </div>
-      <div id="detailsContent" class="bottom-sheet-content"></div>
     </div>
 
     <script

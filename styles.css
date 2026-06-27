@@ -66,9 +66,6 @@ body.dark-mode .place-search-results {
   background: var(--panel);
 }
 
-body.dark-mode .topbar-mode-switch {
-  background: rgba(27, 38, 35, 0.9);
-}
 
 * {
   box-sizing: border-box;
@@ -121,7 +118,7 @@ textarea {
 /* Premium Glassmorphic Topbar (Floating on Desktop) */
 .topbar {
   position: absolute;
-  top: 16px;
+  top: calc(16px + env(safe-area-inset-top, 0px));
   left: 16px;
   right: 16px;
   height: 72px;
@@ -257,18 +254,9 @@ h2 {
 }
 
 .topbar-actions {
-  position: absolute;
-  top: 30px;
-  right: 40px;
   display: flex;
   align-items: center;
   gap: 10px;
-  z-index: 501;
-}
-
-.topbar-mode-switch {
-  width: 244px;
-  background: rgba(244, 247, 246, 0.85);
 }
 
 .icon-button,
@@ -339,7 +327,7 @@ h2 {
 /* Floating Panel Card (not a bottom sheet) */
 .panel {
   position: fixed;
-  top: 112px;
+  top: calc(112px + env(safe-area-inset-top, 0px));
   left: 16px;
   width: 380px;
   max-width: calc(100vw - 32px);
@@ -398,6 +386,7 @@ h2 {
 
 .panel.show-filters #filterSection {
   display: block;
+  padding-top: 10px;
 }
 
 #reportListSection {
@@ -457,8 +446,7 @@ legend {
   grid-template-columns: repeat(2, 1fr);
 }
 
-.mode-button,
-.app-mode-button {
+.mode-button {
   min-height: 38px;
   border: 0;
   border-radius: 10px;
@@ -469,8 +457,7 @@ legend {
   transition: all 120ms ease;
 }
 
-.mode-button.is-active,
-.app-mode-button.is-active {
+.mode-button.is-active {
   background: var(--surface);
   color: var(--ink);
   box-shadow: 0 6px 16px rgba(16, 24, 21, 0.06);
@@ -524,7 +511,7 @@ legend {
 label {
   display: grid;
   gap: 7px;
-  font-weight: 750;
+  font-weight: 600;
   font-size: 13px;
 }
 
@@ -564,20 +551,6 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-}
-
-.coords {
-  display: grid;
-  gap: 5px;
-  padding: 13px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--soft);
-  font-size: 13px;
-}
-
-.coords span {
-  color: var(--muted);
 }
 
 .section-heading {
@@ -1066,11 +1039,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin: 0 16px 160px 0 !important;
-}
-
-.leaflet-right .leaflet-control-zoom {
-  margin: 0 16px 160px 0 !important;
+  margin: 0 0 36px 16px !important;
 }
 
 .leaflet-control-zoom a {
@@ -1115,7 +1084,7 @@ textarea {
     overflow: hidden;
   }
 
-  /* Combined topbar overlay (like desktop) */
+  /* Combined topbar overlay – no backdrop-filter to avoid breaking position:fixed on iOS */
   .topbar {
     position: absolute;
     top: 0;
@@ -1130,7 +1099,6 @@ textarea {
     padding: 6px 12px;
     border-radius: 0;
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
     border-bottom: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
     z-index: 1000;
@@ -1186,51 +1154,30 @@ textarea {
     pointer-events: none;
     padding: 0;
   }
-
-  .topbar-mode-switch {
-    pointer-events: auto;
-    width: auto;
-    display: flex;
-    flex-direction: row;
-    gap: 3px;
-    padding: 3px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-strong);
-  }
-
-  .topbar-mode-switch .app-mode-button {
-    min-height: 36px;
-    padding: 0 14px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
+  
   /* Panel: compact card on mobile */
   .panel {
-    top: 60px;
+    top: 64px;
     left: 8px;
     right: 8px;
     width: auto;
     max-width: none;
-    max-height: 35vh;
+    max-height: 70vh;
   }
 
   /* Floating buttons */
   #locateButton.floating-btn {
-    bottom: 80px;
+    bottom: 112px;
     right: 16px;
   }
 
   #filterToggleButton.floating-btn {
-    bottom: 140px;
+    bottom: 64px;
     right: 16px;
   }
 
   #themeToggleButton.floating-btn {
-    bottom: 200px;
+    bottom: 16px;
     right: 16px;
   }
 
@@ -1250,11 +1197,28 @@ textarea {
   }
 
   .leaflet-control-zoom {
-    position: fixed !important;
-    bottom: 72px !important;
-    left: 16px !important;
-    right: auto !important;
-    margin: 0 !important;
+    margin: 0 0 36px 16px !important;
+  }
+
+  /* Details Card on Mobile */
+  .details-card {
+    top: 64px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+    max-height: 70vh;
+  }
+
+  /* Report Button on Mobile */
+  .report-btn {
+    bottom: 16px;
+    padding: 10px 22px;
+    font-size: 14px;
+  }
+
+  .draw-help {
+    display: none;
   }
 
 }
@@ -1272,115 +1236,132 @@ textarea {
   }
 }
 
-/* Bottom Sheets & Backdrops general styles (Mobile only) */
-.bottom-sheet {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--panel);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  box-shadow: 0 -10px 40px rgba(16, 24, 21, 0.16);
-  z-index: 1100;
-  transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 16px 20px 24px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.bottom-sheet.is-open {
-  transform: translateY(0);
-}
-
-.bottom-sheet-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(16, 24, 21, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 1099;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.bottom-sheet-backdrop.is-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.bottom-sheet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.bottom-sheet-handle {
-  width: 40px;
-  height: 5px;
-  background: var(--line);
-  border-radius: 3px;
-  margin: 0 auto;
-}
-
-.close-button {
+/* Report Button */
+.report-btn {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
   border: 0;
-  background: var(--soft);
-  color: var(--muted);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-size: 18px;
+  border-radius: 24px;
+  background: #1a8845;
+  color: #fff;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 750;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 120ms ease;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(26, 136, 69, 0.35);
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 160ms ease;
+  white-space: nowrap;
 }
 
-.close-button:hover {
-  background: var(--line);
-  color: var(--ink);
+.report-btn:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 8px 28px rgba(26, 136, 69, 0.45);
 }
 
-.bottom-sheet-content {
-  padding-top: 8px;
+.report-btn:active {
+  transform: translateX(-50%) scale(0.97);
 }
 
-/* Inside Bottom Sheet Report Details styling */
-.sheet-popup-title {
+.report-btn.is-hidden {
+  display: none;
+}
+
+.report-btn span {
   font-size: 20px;
-  font-weight: 800;
-  margin: 0 0 6px 0;
-  color: var(--ink);
+  font-weight: 500;
+  line-height: 1;
 }
 
-.sheet-popup-meta {
+/* Map hint floating over the map */
+.map-hint {
+  position: absolute;
+  bottom: 164px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 998;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(16, 24, 21, 0.85);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.map-hint.is-hidden {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .map-hint {
+    bottom: 68px;
+  }
+}
+
+/* Details Card */
+.details-card {
+  position: absolute;
+  top: calc(112px + env(safe-area-inset-top, 0px));
+  left: 16px;
+  width: 380px;
+  max-height: calc(100vh - 200px);
+  background: var(--panel);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-strong);
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: opacity 200ms ease;
+}
+
+.details-card.is-hidden {
+  display: none;
+}
+
+.details-card .panel-close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.details-card-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+  color: var(--ink);
+  padding-right: 28px;
+}
+
+.details-card-meta {
   font-size: 12px;
   color: var(--muted);
-  margin: 0 0 16px 0;
+  margin: 0 0 14px 0;
   font-weight: 600;
 }
 
-.sheet-popup-desc {
+.details-card-desc {
   font-size: 14.5px;
   line-height: 1.5;
-  margin: 0 0 20px 0;
+  margin: 0 0 18px 0;
   color: var(--ink);
 }
 
-.sheet-popup-actions {
+.details-card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-.sheet-popup-actions button {
+.details-card-actions button {
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -1391,21 +1372,80 @@ textarea {
   transition: all 120ms ease;
 }
 
-.sheet-popup-actions button:hover:not(:disabled) {
+.details-card-actions button:hover:not(:disabled) {
   background: var(--soft);
   border-color: var(--muted);
 }
 
-.sheet-popup-actions button:disabled {
+.details-card-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.52;
 }
 
-.sheet-popup-voted {
+.details-card-voted {
   font-size: 12px;
   color: var(--muted);
   margin-top: 12px;
   text-align: center;
   font-weight: 600;
 }
+
+/* Form steps: hidden on mobile, visible all at once on desktop */
+.form-step {
+  display: none;
+}
+
+.form-step.is-active {
+  display: block;
+}
+
+.form-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.form-nav .mini-button {
+  flex-shrink: 0;
+}
+
+.step-indicator {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+#desktopSubmitButton {
+  display: none;
+}
+
+/* Desktop: all form steps visible, no wizard */
+@media (min-width: 769px) {
+  .form-step {
+    display: block;
+  }
+
+  #mobileFormNav {
+    display: none;
+  }
+
+  #desktopSubmitButton {
+    display: block;
+  }
+
+  .report-btn {
+    bottom: 32px;
+  }
+
+  .panel-close-button {
+    display: none;
+  }
+}
+
+/* Back to mobile layout */
+
+/* Back to mobile layout */
 

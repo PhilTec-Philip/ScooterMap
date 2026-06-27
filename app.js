@@ -39,7 +39,7 @@ let votes = loadVotes();
 let apiAvailable = false;
 const voterId = getOrCreateVoterId();
 let activeCategories = new Set(Object.keys(categories));
-let appMode = "view";
+let isReporting = false;
 let drawMode = "point";
 let selectedGeometry = null;
 let circleCenter = null;
@@ -52,7 +52,7 @@ const map = L.map("map", {
   preferCanvas: true
 }).setView([51.1657, 10.4515], 6);
 
-L.control.zoom({ position: "bottomright" }).addTo(map);
+L.control.zoom({ position: "bottomleft" }).addTo(map);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -89,17 +89,22 @@ const finishShapeButton = document.querySelector("#finishShapeButton");
 const clearShapeButton = document.querySelector("#clearShapeButton");
 const drawModes = document.querySelector(".draw-modes");
 const modeButtons = document.querySelectorAll(".mode-button");
-const appModeButtons = document.querySelectorAll(".app-mode-button");
-
-// Redesign elements
-const closePanelButton = document.querySelector("#closePanelButton");
-const filterToggleButton = document.querySelector("#filterToggleButton");
-const sheetBackdrop = document.querySelector("#sheetBackdrop");
-const detailsSheet = document.querySelector("#detailsSheet");
+const reportButton = document.querySelector("#reportButton");
+const formSteps = document.querySelectorAll(".form-step");
+const nextStepButton = document.querySelector("#nextStepButton");
+const backStepButton = document.querySelector("#backStepButton");
+const submitStepButton = document.querySelector("#submitStepButton");
+const stepIndicator = document.querySelector("#stepIndicator");
+const desktopSubmitButton = document.querySelector("#desktopSubmitButton");
+const detailsCard = document.querySelector("#detailsCard");
 const detailsContent = document.querySelector("#detailsContent");
 const closeDetailsButton = document.querySelector("#closeDetailsButton");
+const closePanelButton = document.querySelector("#closePanelButton");
+const filterToggleButton = document.querySelector("#filterToggleButton");
 const reportsList = document.querySelector("#reportsList");
 const themeToggleButton = document.querySelector("#themeToggleButton");
+const mapHint = document.querySelector("#mapHint");
+let currentStep = 0;
 
 init();
 
@@ -108,6 +113,7 @@ function init() {
   renderFilters();
   renderReports();
   syncReportsFromApi();
+  toggleSeverityVisibility();
 
   // Dark Mode preference handling
   const savedTheme = localStorage.getItem("scootermap.theme") || "light";
@@ -124,6 +130,7 @@ function init() {
   categorySelect.addEventListener("change", () => {
     populateTypeOptions();
     renderDraftShape();
+    toggleSeverityVisibility();
   });
   reportForm.addEventListener("submit", handleSubmit);
   placeSearchForm.addEventListener("submit", handlePlaceSearch);
@@ -136,23 +143,20 @@ function init() {
   finishShapeButton.addEventListener("click", finishPolygon);
   clearShapeButton.addEventListener("click", clearDraftShape);
 
-  appModeButtons.forEach((button) => {
-    button.addEventListener("click", () => setAppMode(button.dataset.appMode));
-  });
-
   modeButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      if (appMode === "edit") {
+      if (isReporting) {
         setDrawMode(button.dataset.mode);
       }
     });
   });
 
-  // Mobile sheets event listeners
+  reportButton.addEventListener("click", startReporting);
   closePanelButton.addEventListener("click", closeMobileDrawer);
   filterToggleButton.addEventListener("click", toggleMobileFilters);
-  closeDetailsButton.addEventListener("click", closeMobileDetails);
-  sheetBackdrop.addEventListener("click", closeAllMobileSheets);
+  closeDetailsButton.addEventListener("click", closeDetailsCard);
+  nextStepButton.addEventListener("click", nextStepHandler);
+  backStepButton.addEventListener("click", backStepHandler);
 
   map.on("click", handleMapClick);
   map.on("mousemove", handleMapMove);
@@ -161,7 +165,6 @@ function init() {
   });
   map.getContainer().addEventListener("contextmenu", (event) => event.preventDefault());
 
-  setAppMode("view");
   requestAnimationFrame(() => map.invalidateSize());
   window.addEventListener("resize", () => map.invalidateSize());
   window.addEventListener("focus", () => syncReportsFromApi({ silent: true }));
@@ -171,6 +174,7 @@ function init() {
     }
   });
   setInterval(() => syncReportsFromApi({ silent: true }), 7000);
+  desktopSubmitButton.disabled = true;
 }
 
 function populateTypeOptions() {
@@ -224,45 +228,138 @@ function setDrawMode(mode) {
   });
 }
 
-function setAppMode(mode) {
-  appMode = mode;
-  clearDraftShape();
-  document.body.classList.toggle("view-mode", mode === "view");
-  document.body.classList.toggle("edit-mode", mode === "edit");
+const isMobile = () => window.innerWidth < 769;
 
-  appModeButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.appMode === mode);
+function goToStep(step) {
+  currentStep = step;
+  formSteps.forEach((el, i) => {
+    el.classList.toggle("is-active", i === step);
   });
+  updateStepButtons();
+}
 
-  const isEditing = mode === "edit";
-  drawModes.classList.toggle("is-disabled", !isEditing);
-  modeButtons.forEach((button) => {
-    button.disabled = !isEditing;
-  });
-  finishShapeButton.disabled = !isEditing || polygonPoints.length < 3 || selectedGeometry?.kind === "polygon";
-  clearShapeButton.disabled = !isEditing;
-  reportForm.querySelector(".primary-button").disabled = !isEditing;
-
-  drawHelp.textContent = isEditing
-    ? drawHelpText[drawMode]
-    : "Anschauen-Modus: Klicke auf bestehende Einträge, um Details zu sehen.";
-
-  // Update panels view states
-  const panel = document.querySelector(".panel");
-  if (isEditing) {
-    panel.classList.remove("is-hidden");
-    panel.classList.add("show-form");
-    panel.classList.remove("show-filters");
-    openMobileForm();
+function updateStepButtons() {
+  if (currentStep === 0) {
+    nextStepButton.style.display = "";
+    backStepButton.style.display = "none";
+    submitStepButton.style.display = "none";
+    stepIndicator.textContent = "";
+  } else if (currentStep < 3) {
+    nextStepButton.style.display = "";
+    backStepButton.style.display = currentStep > 1 ? "" : "none";
+    submitStepButton.style.display = "none";
+    stepIndicator.textContent = currentStep + " / 3";
+    nextStepButton.disabled = false;
   } else {
-    panel.classList.remove("show-form");
-    panel.classList.add("show-filters");
-    closeMobileDetails();
+    nextStepButton.style.display = "none";
+    backStepButton.style.display = "";
+    submitStepButton.style.display = "";
+    stepIndicator.textContent = "3 / 3";
   }
 }
 
+function afterGeometryPlaced() {
+  if (isMobile()) {
+    if (currentStep === 0) {
+      nextStepButton.disabled = false;
+      if (mapHint) mapHint.textContent = "Weiter zur Kategorie";
+    }
+  } else {
+    desktopSubmitButton.disabled = false;
+  }
+}
+
+function nextStepHandler() {
+  if (currentStep >= 0 && currentStep < 3) {
+    if (currentStep === 0) {
+      if (!selectedGeometry) return;
+      if (mapHint) mapHint.classList.add("is-hidden");
+      goToStep(1);
+      return;
+    }
+    if (currentStep === 1 && (!categorySelect.value || !typeSelect.value)) return;
+    if (currentStep === 2) {
+      const needsSeverity = document.querySelector("#severityLabel").style.display !== "none";
+      if (needsSeverity && !document.querySelector("#severity").value) return;
+      if (!document.querySelector("#duration").value) return;
+    }
+    goToStep(currentStep + 1);
+  }
+}
+
+function backStepHandler() {
+  if (currentStep > 0) {
+    goToStep(currentStep - 1);
+  }
+}
+
+function toggleSeverityVisibility() {
+  const cat = categorySelect.value;
+  const severityLabel = document.querySelector("#severityLabel");
+  const severitySelect = document.querySelector("#severity");
+  if (cat === "community") {
+    severityLabel.style.display = "none";
+    severitySelect.removeAttribute("required");
+  } else {
+    severityLabel.style.display = "";
+    severitySelect.setAttribute("required", "");
+  }
+}
+
+function startReporting() {
+  isReporting = true;
+  clearDraftShape();
+  reportButton.classList.add("is-hidden");
+  drawModes.classList.remove("is-disabled");
+  modeButtons.forEach((button) => { button.disabled = false; });
+  setDrawMode("point");
+
+  const panel = document.querySelector(".panel");
+  panel.classList.remove("is-hidden");
+  panel.classList.add("show-form");
+  panel.classList.remove("show-filters");
+
+  if (isMobile()) {
+    goToStep(0);
+    nextStepButton.disabled = true;
+  } else {
+    formSteps.forEach(el => el.classList.add("is-active"));
+  desktopSubmitButton.disabled = true;
+  if (mapHint) mapHint.classList.add("is-hidden");
+}
+
+  selectedPosition.textContent = "Wähle eine Markierungsart und klicke auf die Karte.";
+  drawHelp.textContent = drawHelpText.point;
+  clearShapeButton.disabled = false;
+  finishShapeButton.disabled = true;
+
+  showToast("Klicke auf die Karte, um eine Position zu wählen.");
+  if (isMobile() && mapHint) {
+    mapHint.textContent = drawHelpText.point;
+    mapHint.classList.remove("is-hidden");
+  }
+}
+
+function cancelReporting() {
+  isReporting = false;
+  clearDraftShape();
+  reportButton.classList.remove("is-hidden");
+  drawModes.classList.add("is-disabled");
+  modeButtons.forEach((button) => { button.disabled = true; });
+  reportForm.reset();
+  populateTypeOptions();
+  formSteps.forEach(el => el.classList.remove("is-active"));
+  goToStep(0);
+  const panel = document.querySelector(".panel");
+  panel.classList.add("is-hidden");
+  panel.classList.remove("show-form");
+  clearShapeButton.disabled = true;
+  finishShapeButton.disabled = true;
+  desktopSubmitButton.disabled = true;
+}
+
 function handleMapClick(event) {
-  if (appMode !== "edit") {
+  if (!isReporting) {
     return;
   }
 
@@ -275,6 +372,7 @@ function handleMapClick(event) {
     renderDraftShape();
     updateSelectionLabel();
     openMobileForm();
+    afterGeometryPlaced();
     return;
   }
 
@@ -300,6 +398,7 @@ function handleMapClick(event) {
     renderDraftShape();
     updateSelectionLabel();
     openMobileForm();
+    afterGeometryPlaced();
     return;
   }
 
@@ -310,7 +409,7 @@ function handleMapClick(event) {
 }
 
 function handleMapMove(event) {
-  if (appMode !== "edit" || drawMode !== "circle" || !circleCenter) {
+  if (!isReporting || drawMode !== "circle" || !circleCenter) {
     return;
   }
 
@@ -324,7 +423,7 @@ function handleMapMove(event) {
 }
 
 function finishPolygon() {
-  if (appMode !== "edit") {
+  if (!isReporting) {
     return;
   }
 
@@ -339,6 +438,7 @@ function finishPolygon() {
   renderDraftShape();
   updateSelectionLabel();
   openMobileForm();
+  afterGeometryPlaced();
 }
 
 function renderDraftShape() {
@@ -419,7 +519,7 @@ function renderDraftShape() {
     );
   }
 
-  finishShapeButton.disabled = appMode !== "edit" || polygonPoints.length < 3 || selectedGeometry?.kind === "polygon";
+  finishShapeButton.disabled = !isReporting || polygonPoints.length < 3 || selectedGeometry?.kind === "polygon";
 }
 
 function updateSelectionLabel() {
@@ -449,8 +549,8 @@ function updateSelectionLabel() {
 async function handleSubmit(event) {
   event.preventDefault();
 
-  if (appMode !== "edit") {
-    selectedPosition.textContent = "Wechsle zuerst in den Bearbeiten-Modus";
+  if (!isReporting) {
+    selectedPosition.textContent = "Bitte zuerst eine Markierung auf der Karte setzen";
     return;
   }
 
@@ -478,6 +578,7 @@ async function handleSubmit(event) {
   reportForm.reset();
   populateTypeOptions();
   clearDraftShape();
+  cancelReporting();
 
   if (apiAvailable) {
     try {
@@ -576,7 +677,7 @@ function renderReports() {
     layer.bindPopup(makePopup(report));
     layer.on("click", (event) => {
       L.DomEvent.stop(event.originalEvent);
-      showDetailsSheet(report);
+      showDetailsCard(report);
     });
     layer.on("contextmenu", (event) => {
       L.DomEvent.stop(event.originalEvent);
@@ -735,7 +836,7 @@ function locateUser() {
       const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
       map.setView(latlng, 15);
 
-      if (appMode !== "edit") {
+      if (!isReporting) {
         return;
       }
 
@@ -766,7 +867,13 @@ function clearDraftShape() {
   draftLayers = [];
   finishShapeButton.disabled = true;
   updateSelectionLabel();
-  closeMobileDrawer();
+  if (isMobile()) {
+    goToStep(0);
+    if (mapHint) {
+      mapHint.textContent = drawHelpText[drawMode];
+      mapHint.classList.remove("is-hidden");
+    }
+  }
 }
 
 function loadReports() {
@@ -831,9 +938,7 @@ async function syncReportsFromApi(options = {}) {
     saveReports();
     renderReports();
     if (!silent) {
-      showToast(appMode === "edit"
-        ? "Markierung auf der Karte setzen, Formular ausfüllen, speichern."
-        : "Einträge anklicken, um Details zu sehen.");
+      showToast("Einträge wurden aktualisiert.");
     }
   } catch {
     apiAvailable = false;
@@ -934,9 +1039,9 @@ function escapeHtml(value) {
 function closeMobileDrawer() {
   const panel = document.querySelector(".panel");
   panel.classList.add("is-hidden");
-  if (detailsSheet.classList.contains("is-open")) return;
-  sheetBackdrop.classList.remove("is-visible");
-  sheetBackdrop.hidden = true;
+  if (isReporting) {
+    cancelReporting();
+  }
 }
 
 function toggleMobileFilters() {
@@ -955,25 +1060,12 @@ function openMobileForm() {
   panel.classList.remove("show-filters");
 }
 
-function closeMobileDetails() {
-  detailsSheet.classList.remove("is-open");
-  const panel = document.querySelector(".panel");
-  if (!panel.classList.contains("is-hidden")) return; // Keep backdrop if panel is visible
-  sheetBackdrop.classList.remove("is-visible");
-  setTimeout(() => {
-    detailsSheet.hidden = true;
-    if (!sheetBackdrop.classList.contains("is-visible")) {
-      sheetBackdrop.hidden = true;
-    }
-  }, 350);
+function closeDetailsCard() {
+  detailsCard.classList.add("is-hidden");
 }
 
-function closeAllMobileSheets() {
-  closeMobileDrawer();
-  closeMobileDetails();
-}
-
-function showDetailsSheet(report) {
+function showDetailsCard(report) {
+  closeDetailsCard();
   const vote = votes[report.id];
   const created = new Date(report.createdAt).toLocaleString("de-DE", {
     dateStyle: "short",
@@ -981,14 +1073,14 @@ function showDetailsSheet(report) {
   });
 
   detailsContent.innerHTML = `
-    <h3 class="sheet-popup-title">${escapeHtml(report.type)}</h3>
-    <p class="sheet-popup-meta">${categories[report.category].label} · ${shapeLabel(normalizeGeometry(report).kind)} · ${severityLabel(report.severity)} · ${created}</p>
-    <p class="sheet-popup-desc">${escapeHtml(report.description)}</p>
-    <div class="sheet-popup-actions">
+    <h3 class="details-card-title">${escapeHtml(report.type)}</h3>
+    <p class="details-card-meta">${categories[report.category].label} · ${shapeLabel(normalizeGeometry(report).kind)} · ${severityLabel(report.severity)} · ${created}</p>
+    <p class="details-card-desc">${escapeHtml(report.description)}</p>
+    <div class="details-card-actions">
       <button type="button" class="confirm-vote-btn" data-action="confirm" ${vote ? "disabled" : ""}>Existiert noch (${report.confirmations})</button>
       <button type="button" class="dispute-vote-btn" data-action="dispute" ${vote ? "disabled" : ""}>Nicht mehr da (${report.disputes})</button>
     </div>
-    ${vote ? `<p class="sheet-popup-voted">Du hast diesen Eintrag bereits bewertet.</p>` : ""}
+    ${vote ? `<p class="details-card-voted">Du hast diesen Eintrag bereits bewertet.</p>` : ""}
   `;
 
   const confirmBtn = detailsContent.querySelector('.confirm-vote-btn');
@@ -997,21 +1089,16 @@ function showDetailsSheet(report) {
   confirmBtn.addEventListener("click", async () => {
     await updateVote(report.id, "confirmations");
     const updated = reports.find(r => r.id === report.id);
-    if (updated) showDetailsSheet(updated);
+    if (updated) showDetailsCard(updated);
   });
 
   disputeBtn.addEventListener("click", async () => {
     await updateVote(report.id, "disputes");
     const updated = reports.find(r => r.id === report.id);
-    if (updated) showDetailsSheet(updated);
+    if (updated) showDetailsCard(updated);
   });
 
-  detailsSheet.hidden = false;
-  sheetBackdrop.hidden = false;
-  requestAnimationFrame(() => {
-    detailsSheet.classList.add("is-open");
-    sheetBackdrop.classList.add("is-visible");
-  });
+  detailsCard.classList.remove("is-hidden");
 }
 
 function renderReportsList(visibleReports) {
@@ -1067,7 +1154,7 @@ function renderReportsList(visibleReports) {
       });
       
       if (layer) {
-          showDetailsSheet(report);
+          showDetailsCard(report);
       }
     });
 
