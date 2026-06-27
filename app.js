@@ -48,10 +48,11 @@ let draftLayers = [];
 let renderedLayers = [];
 
 const map = L.map("map", {
-  zoomControl: false
+  zoomControl: false,
+  preferCanvas: true
 }).setView([51.1657, 10.4515], 6);
 
-L.control.zoom({ position: "bottomleft" }).addTo(map);
+L.control.zoom({ position: "bottomright" }).addTo(map);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -65,7 +66,22 @@ const selectedPosition = document.querySelector("#selectedPosition");
 const filters = document.querySelector("#filters");
 const reportCount = document.querySelector("#reportCount");
 const drawHelp = document.querySelector("#drawHelp");
-const mapHint = document.querySelector("#mapHint");
+const toastEl = document.querySelector("#toast");
+let toastTimer = null;
+
+function showToast(msg) {
+  if (!toastEl) return;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.hidden = false;
+  requestAnimationFrame(() => toastEl.classList.add("is-visible"));
+  toastTimer = setTimeout(() => {
+    toastEl.classList.remove("is-visible");
+    toastEl.addEventListener("transitionend", () => {
+      toastEl.hidden = true;
+    }, { once: true });
+  }, 3000);
+}
 const placeSearchForm = document.querySelector("#placeSearchForm");
 const placeSearchInput = document.querySelector("#placeSearchInput");
 const placeSearchResults = document.querySelector("#placeSearchResults");
@@ -84,8 +100,6 @@ const detailsContent = document.querySelector("#detailsContent");
 const closeDetailsButton = document.querySelector("#closeDetailsButton");
 const reportsList = document.querySelector("#reportsList");
 const themeToggleButton = document.querySelector("#themeToggleButton");
-const filterCollapseButton = document.querySelector("#filterCollapseButton");
-const filtersWrapper = document.querySelector("#filtersWrapper");
 
 init();
 
@@ -139,16 +153,6 @@ function init() {
   filterToggleButton.addEventListener("click", toggleMobileFilters);
   closeDetailsButton.addEventListener("click", closeMobileDetails);
   sheetBackdrop.addEventListener("click", closeAllMobileSheets);
-
-  // Filter collapse toggle
-  if (filterCollapseButton && filtersWrapper) {
-    filterCollapseButton.addEventListener("click", () => {
-      const isCollapsed = filtersWrapper.classList.toggle("collapsed");
-      filterCollapseButton.classList.toggle("is-collapsed", isCollapsed);
-      filterCollapseButton.setAttribute("aria-label", isCollapsed ? "Filter einblenden" : "Filter ausblenden");
-      requestAnimationFrame(() => map.invalidateSize());
-    });
-  }
 
   map.on("click", handleMapClick);
   map.on("mousemove", handleMapMove);
@@ -242,22 +246,19 @@ function setAppMode(mode) {
   drawHelp.textContent = isEditing
     ? drawHelpText[drawMode]
     : "Anschauen-Modus: Klicke auf bestehende Einträge, um Details zu sehen.";
-  mapHint.textContent = isEditing
-    ? "Markierung auf der Karte setzen, Formular ausfüllen, speichern."
-    : "Einträge anklicken, um Details zu sehen.";
 
   // Update panels view states
   const panel = document.querySelector(".panel");
   if (isEditing) {
+    panel.classList.remove("is-hidden");
     panel.classList.add("show-form");
     panel.classList.remove("show-filters");
+    openMobileForm();
   } else {
     panel.classList.remove("show-form");
     panel.classList.add("show-filters");
+    closeMobileDetails();
   }
-  closeAllMobileSheets();
-
-  requestAnimationFrame(() => map.invalidateSize());
 }
 
 function handleMapClick(event) {
@@ -483,7 +484,7 @@ async function handleSubmit(event) {
       await createRemoteReport(report);
       await syncReportsFromApi();
     } catch {
-      mapHint.textContent = "Server nicht erreichbar. Eintrag wurde nur lokal gespeichert.";
+      showToast("Server nicht erreichbar. Eintrag wurde nur lokal gespeichert.");
     }
   }
 }
@@ -497,16 +498,16 @@ async function handlePlaceSearch(event) {
     return;
   }
 
-  mapHint.textContent = "Ort wird gesucht...";
+  showToast("Ort wird gesucht...");
 
   try {
     const results = await searchPlaces(query);
     renderPlaceResults(results);
-    mapHint.textContent = results.length > 0
+    showToast(results.length > 0
       ? "Suchergebnis auswählen."
-      : "Kein Ort gefunden.";
+      : "Kein Ort gefunden.");
   } catch {
-    mapHint.textContent = "Ortssuche nicht erreichbar.";
+    showToast("Ortssuche nicht erreichbar.");
   }
 }
 
@@ -551,7 +552,7 @@ function renderPlaceResults(results) {
       map.setView([lat, lng], result.type === "city" || result.type === "town" ? 13 : 16);
       placeSearchInput.value = result.display_name.split(",")[0];
       clearPlaceResults();
-      mapHint.textContent = "Ort gefunden.";
+      showToast("Ort gefunden.");
     });
     placeSearchResults.append(button);
   });
@@ -689,12 +690,12 @@ async function updateVote(id, field) {
       if (error.status === 409) {
         votes[id] = field;
         saveVotes();
-        mapHint.textContent = "Du hast diesen Eintrag bereits bewertet.";
+        showToast("Du hast diesen Eintrag bereits bewertet.");
         renderReports();
         return;
       }
 
-      mapHint.textContent = "Server nicht erreichbar. Bewertung wurde nur lokal gespeichert.";
+      showToast("Server nicht erreichbar. Bewertung wurde nur lokal gespeichert.");
     }
   }
 
@@ -719,13 +720,13 @@ async function updateVote(id, field) {
 
 function locateUser() {
   if (!navigator.geolocation) {
-    mapHint.textContent = "Dieser Browser unterstützt Standortzugriff nicht.";
+    showToast("Dieser Browser unterstützt Standortzugriff nicht.");
     selectedPosition.textContent = "Standort wird von diesem Browser nicht unterstützt";
     return;
   }
 
   if (!window.isSecureContext && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
-    mapHint.textContent = "Standort braucht auf dem Handy HTTPS. Über normale LAN-HTTP-Adressen blockt iOS den Zugriff.";
+    showToast("Standort braucht auf dem Handy HTTPS. Über normale LAN-HTTP-Adressen blockt iOS den Zugriff.");
     return;
   }
 
@@ -747,7 +748,7 @@ function locateUser() {
       updateSelectionLabel();
     },
     () => {
-      mapHint.textContent = "Standort konnte nicht ermittelt werden oder wurde blockiert.";
+      showToast("Standort konnte nicht ermittelt werden oder wurde blockiert.");
       selectedPosition.textContent = "Standort konnte nicht ermittelt werden";
     },
     {
@@ -812,7 +813,7 @@ async function syncReportsFromApi(options = {}) {
 
     if (remoteReports.length === 0 && localReports.length > 0) {
       if (!silent) {
-        mapHint.textContent = "Lokale Einträge werden in die Datenbank übernommen...";
+        showToast("Lokale Einträge werden in die Datenbank übernommen...");
       }
 
       await Promise.allSettled(localReports.map((report) => createRemoteReport(report)));
@@ -830,9 +831,9 @@ async function syncReportsFromApi(options = {}) {
     saveReports();
     renderReports();
     if (!silent) {
-      mapHint.textContent = appMode === "edit"
+      showToast(appMode === "edit"
         ? "Markierung auf der Karte setzen, Formular ausfüllen, speichern."
-        : "Einträge anklicken, um Details zu sehen.";
+        : "Einträge anklicken, um Details zu sehen.");
     }
   } catch {
     apiAvailable = false;
@@ -932,42 +933,32 @@ function escapeHtml(value) {
 /* Mobile Bottom Sheets & Desktop Active Reports List Helpers */
 function closeMobileDrawer() {
   const panel = document.querySelector(".panel");
-  panel.classList.remove("is-open");
-  if (detailsSheet.classList.contains("is-open")) return; // Keep backdrop if details is open
+  panel.classList.add("is-hidden");
+  if (detailsSheet.classList.contains("is-open")) return;
   sheetBackdrop.classList.remove("is-visible");
-  setTimeout(() => {
-    if (!sheetBackdrop.classList.contains("is-visible")) {
-      sheetBackdrop.hidden = true;
-    }
-  }, 350);
+  sheetBackdrop.hidden = true;
 }
 
 function toggleMobileFilters() {
   const panel = document.querySelector(".panel");
-  panel.classList.add("is-open");
-  panel.classList.add("show-filters");
-  panel.classList.remove("show-form");
-  sheetBackdrop.hidden = false;
-  requestAnimationFrame(() => {
-    sheetBackdrop.classList.add("is-visible");
-  });
+  const isCurrentlyHidden = panel.classList.toggle("is-hidden");
+  if (!isCurrentlyHidden) {
+    panel.classList.add("show-filters");
+    panel.classList.remove("show-form");
+  }
 }
 
 function openMobileForm() {
   const panel = document.querySelector(".panel");
-  panel.classList.add("is-open");
+  panel.classList.remove("is-hidden");
   panel.classList.add("show-form");
   panel.classList.remove("show-filters");
-  sheetBackdrop.hidden = false;
-  requestAnimationFrame(() => {
-    sheetBackdrop.classList.add("is-visible");
-  });
 }
 
 function closeMobileDetails() {
   detailsSheet.classList.remove("is-open");
   const panel = document.querySelector(".panel");
-  if (panel.classList.contains("is-open")) return; // Keep backdrop if panel is open
+  if (!panel.classList.contains("is-hidden")) return; // Keep backdrop if panel is visible
   sheetBackdrop.classList.remove("is-visible");
   setTimeout(() => {
     detailsSheet.hidden = true;

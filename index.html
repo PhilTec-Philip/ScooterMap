@@ -27,22 +27,16 @@
           <button class="search-button" type="submit" aria-label="Ort suchen">⌕</button>
           <div id="placeSearchResults" class="place-search-results" hidden></div>
         </form>
-        <div class="topbar-actions">
-          <div class="segmented-control topbar-mode-switch two-up" role="radiogroup" aria-label="Modus">
-            <button class="app-mode-button is-active" type="button" data-app-mode="view">Anschauen</button>
-            <button class="app-mode-button" type="button" data-app-mode="edit">Bearbeiten</button>
-          </div>
-          <button id="themeToggleButton" class="icon-button" type="button" title="Farbschema wechseln" aria-label="Farbschema wechseln">
-            <span aria-hidden="true">🌙</span>
-          </button>
-          <button id="locateButton" class="icon-button" type="button" title="Meine Position anzeigen" aria-label="Meine Position anzeigen">
-            <span aria-hidden="true">⌖</span>
-          </button>
-        </div>
       </header>
+      <div class="topbar-actions">
+        <div class="segmented-control topbar-mode-switch two-up" role="radiogroup" aria-label="Modus">
+          <button class="app-mode-button is-active" type="button" data-app-mode="view">Anschauen</button>
+          <button class="app-mode-button" type="button" data-app-mode="edit">Bearbeiten</button>
+        </div>
+      </div>
 
       <main class="workspace">
-        <aside class="panel" aria-label="ScooterMap Steuerung">
+        <aside class="panel is-hidden" aria-label="ScooterMap Steuerung">
           <button id="closePanelButton" class="panel-close-button" type="button" aria-label="Schließen">×</button>
           
           <section id="reportFormSection" class="panel-section">
@@ -125,12 +119,9 @@
               </div>
               <div class="section-heading-actions">
                 <span id="reportCount">0 Einträge</span>
-                <button id="filterCollapseButton" class="filter-collapse-btn" type="button" aria-label="Filter ein-/ausklappen" title="Filter ein-/ausklappen">▼</button>
               </div>
             </div>
-            <div id="filtersWrapper" class="filters-wrapper">
-              <div id="filters" class="filters"></div>
-            </div>
+            <div id="filters" class="filters"></div>
           </section>
 
           <section id="reportListSection" class="panel-section">
@@ -144,10 +135,16 @@
 
         <section class="map-area" aria-label="ScooterMap Karte">
           <div id="map"></div>
-          <button id="filterToggleButton" class="icon-button floating-filter-btn" type="button" title="Filter öffnen" aria-label="Filter öffnen">
+          <button id="filterToggleButton" class="icon-button floating-btn" type="button" title="Filter öffnen" aria-label="Filter öffnen">
             <span>⌆</span>
           </button>
-          <div id="mapHint" class="map-hint">Einträge anklicken, um Details zu sehen.</div>
+          <button id="locateButton" class="icon-button floating-btn" type="button" title="Meine Position anzeigen" aria-label="Meine Position anzeigen">
+            <span aria-hidden="true">⌖</span>
+          </button>
+          <button id="themeToggleButton" class="icon-button floating-btn" type="button" title="Farbschema wechseln" aria-label="Farbschema wechseln">
+            <span aria-hidden="true">🌙</span>
+          </button>
+          <div id="toast" class="toast" hidden></div>
         </section>
       </main>
     </div>
