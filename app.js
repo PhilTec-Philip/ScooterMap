@@ -75,6 +75,16 @@ const drawModes = document.querySelector(".draw-modes");
 const modeButtons = document.querySelectorAll(".mode-button");
 const appModeButtons = document.querySelectorAll(".app-mode-button");
 
+// Redesign elements
+const closePanelButton = document.querySelector("#closePanelButton");
+const filterToggleButton = document.querySelector("#filterToggleButton");
+const sheetBackdrop = document.querySelector("#sheetBackdrop");
+const detailsSheet = document.querySelector("#detailsSheet");
+const detailsContent = document.querySelector("#detailsContent");
+const closeDetailsButton = document.querySelector("#closeDetailsButton");
+const reportsList = document.querySelector("#reportsList");
+const themeToggleButton = document.querySelector("#themeToggleButton");
+
 init();
 
 function init() {
@@ -82,6 +92,18 @@ function init() {
   renderFilters();
   renderReports();
   syncReportsFromApi();
+
+  // Dark Mode preference handling
+  const savedTheme = localStorage.getItem("scootermap.theme") || "light";
+  const isDark = savedTheme === "dark";
+  document.body.classList.toggle("dark-mode", isDark);
+  themeToggleButton.querySelector("span").textContent = isDark ? "☀️" : "🌙";
+
+  themeToggleButton.addEventListener("click", () => {
+    const currentIsDark = document.body.classList.toggle("dark-mode");
+    localStorage.setItem("scootermap.theme", currentIsDark ? "dark" : "light");
+    themeToggleButton.querySelector("span").textContent = currentIsDark ? "☀️" : "🌙";
+  });
 
   categorySelect.addEventListener("change", () => {
     populateTypeOptions();
@@ -94,7 +116,6 @@ function init() {
       clearPlaceResults();
     }
   });
-  document.querySelector("#resetButton").addEventListener("click", resetDemo);
   document.querySelector("#locateButton").addEventListener("click", locateUser);
   finishShapeButton.addEventListener("click", finishPolygon);
   clearShapeButton.addEventListener("click", clearDraftShape);
@@ -110,6 +131,12 @@ function init() {
       }
     });
   });
+
+  // Mobile sheets event listeners
+  closePanelButton.addEventListener("click", closeMobileDrawer);
+  filterToggleButton.addEventListener("click", toggleMobileFilters);
+  closeDetailsButton.addEventListener("click", closeMobileDetails);
+  sheetBackdrop.addEventListener("click", closeAllMobileSheets);
 
   map.on("click", handleMapClick);
   map.on("mousemove", handleMapMove);
@@ -207,6 +234,17 @@ function setAppMode(mode) {
     ? "Markierung auf der Karte setzen, Formular ausfüllen, speichern."
     : "Einträge anklicken, um Details zu sehen.";
 
+  // Update panels view states
+  const panel = document.querySelector(".panel");
+  if (isEditing) {
+    panel.classList.add("show-form");
+    panel.classList.remove("show-filters");
+  } else {
+    panel.classList.remove("show-form");
+    panel.classList.add("show-filters");
+  }
+  closeAllMobileSheets();
+
   requestAnimationFrame(() => map.invalidateSize());
 }
 
@@ -223,6 +261,7 @@ function handleMapClick(event) {
     };
     renderDraftShape();
     updateSelectionLabel();
+    openMobileForm();
     return;
   }
 
@@ -247,6 +286,7 @@ function handleMapClick(event) {
     circleCenter = null;
     renderDraftShape();
     updateSelectionLabel();
+    openMobileForm();
     return;
   }
 
@@ -285,6 +325,7 @@ function finishPolygon() {
   };
   renderDraftShape();
   updateSelectionLabel();
+  openMobileForm();
 }
 
 function renderDraftShape() {
@@ -522,7 +563,11 @@ function renderReports() {
     layer.bindPopup(makePopup(report));
     layer.on("click", (event) => {
       L.DomEvent.stop(event.originalEvent);
-      layer.openPopup();
+      if (window.innerWidth <= 860) {
+        showDetailsSheet(report);
+      } else {
+        layer.openPopup();
+      }
     });
     layer.on("contextmenu", (event) => {
       L.DomEvent.stop(event.originalEvent);
@@ -532,6 +577,9 @@ function renderReports() {
   });
 
   reportCount.textContent = `${reports.length} ${reports.length === 1 ? "Eintrag" : "Einträge"}`;
+
+  // Populate desktop sidebar report list
+  renderReportsList(visibleReports);
 }
 
 function makeReportLayer(report) {
@@ -701,26 +749,6 @@ function locateUser() {
   );
 }
 
-async function resetDemo() {
-  reports = [];
-  votes = {};
-  saveReports();
-  saveVotes();
-  clearDraftShape();
-  renderReports();
-
-  if (apiAvailable) {
-    try {
-      await fetch("/api/reports", {
-        method: "DELETE"
-      });
-      await syncReportsFromApi();
-    } catch {
-      mapHint.textContent = "Server nicht erreichbar. Nur lokale Demo-Daten gelöscht.";
-    }
-  }
-}
-
 function clearDraftShape() {
   selectedGeometry = null;
   circleCenter = null;
@@ -729,6 +757,7 @@ function clearDraftShape() {
   draftLayers = [];
   finishShapeButton.disabled = true;
   updateSelectionLabel();
+  closeMobileDrawer();
 }
 
 function loadReports() {
@@ -890,4 +919,164 @@ function escapeHtml(value) {
   const div = document.createElement("div");
   div.textContent = value;
   return div.innerHTML;
+}
+
+/* Mobile Bottom Sheets & Desktop Active Reports List Helpers */
+function closeMobileDrawer() {
+  const panel = document.querySelector(".panel");
+  panel.classList.remove("is-open");
+  if (detailsSheet.classList.contains("is-open")) return; // Keep backdrop if details is open
+  sheetBackdrop.classList.remove("is-visible");
+  setTimeout(() => {
+    if (!sheetBackdrop.classList.contains("is-visible")) {
+      sheetBackdrop.hidden = true;
+    }
+  }, 350);
+}
+
+function toggleMobileFilters() {
+  const panel = document.querySelector(".panel");
+  panel.classList.add("is-open");
+  panel.classList.add("show-filters");
+  panel.classList.remove("show-form");
+  sheetBackdrop.hidden = false;
+  requestAnimationFrame(() => {
+    sheetBackdrop.classList.add("is-visible");
+  });
+}
+
+function openMobileForm() {
+  if (window.innerWidth > 860) return;
+  const panel = document.querySelector(".panel");
+  panel.classList.add("is-open");
+  panel.classList.add("show-form");
+  panel.classList.remove("show-filters");
+  sheetBackdrop.hidden = false;
+  requestAnimationFrame(() => {
+    sheetBackdrop.classList.add("is-visible");
+  });
+}
+
+function closeMobileDetails() {
+  detailsSheet.classList.remove("is-open");
+  const panel = document.querySelector(".panel");
+  if (panel.classList.contains("is-open")) return; // Keep backdrop if panel is open
+  sheetBackdrop.classList.remove("is-visible");
+  setTimeout(() => {
+    detailsSheet.hidden = true;
+    if (!sheetBackdrop.classList.contains("is-visible")) {
+      sheetBackdrop.hidden = true;
+    }
+  }, 350);
+}
+
+function closeAllMobileSheets() {
+  closeMobileDrawer();
+  closeMobileDetails();
+}
+
+function showDetailsSheet(report) {
+  const vote = votes[report.id];
+  const created = new Date(report.createdAt).toLocaleString("de-DE", {
+    dateStyle: "short",
+    timeStyle: "short"
+  });
+
+  detailsContent.innerHTML = `
+    <h3 class="sheet-popup-title">${escapeHtml(report.type)}</h3>
+    <p class="sheet-popup-meta">${categories[report.category].label} · ${shapeLabel(normalizeGeometry(report).kind)} · ${severityLabel(report.severity)} · ${created}</p>
+    <p class="sheet-popup-desc">${escapeHtml(report.description)}</p>
+    <div class="sheet-popup-actions">
+      <button type="button" class="confirm-vote-btn" data-action="confirm" ${vote ? "disabled" : ""}>Existiert noch (${report.confirmations})</button>
+      <button type="button" class="dispute-vote-btn" data-action="dispute" ${vote ? "disabled" : ""}>Nicht mehr da (${report.disputes})</button>
+    </div>
+    ${vote ? `<p class="sheet-popup-voted">Du hast diesen Eintrag bereits bewertet.</p>` : ""}
+  `;
+
+  const confirmBtn = detailsContent.querySelector('.confirm-vote-btn');
+  const disputeBtn = detailsContent.querySelector('.dispute-vote-btn');
+
+  confirmBtn.addEventListener("click", async () => {
+    await updateVote(report.id, "confirmations");
+    const updated = reports.find(r => r.id === report.id);
+    if (updated) showDetailsSheet(updated);
+  });
+
+  disputeBtn.addEventListener("click", async () => {
+    await updateVote(report.id, "disputes");
+    const updated = reports.find(r => r.id === report.id);
+    if (updated) showDetailsSheet(updated);
+  });
+
+  detailsSheet.hidden = false;
+  sheetBackdrop.hidden = false;
+  requestAnimationFrame(() => {
+    detailsSheet.classList.add("is-open");
+    sheetBackdrop.classList.add("is-visible");
+  });
+}
+
+function renderReportsList(visibleReports) {
+  if (!reportsList) return;
+  reportsList.innerHTML = "";
+
+  if (visibleReports.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "Keine Einträge für die aktiven Filter.";
+    reportsList.append(empty);
+    return;
+  }
+
+  visibleReports.forEach((report) => {
+    const card = document.createElement("div");
+    card.className = "report-card";
+    
+    const created = new Date(report.createdAt).toLocaleString("de-DE", {
+      dateStyle: "short"
+    });
+
+    card.innerHTML = `
+      <div class="report-card-header">
+        <h3 class="report-card-title">${escapeHtml(report.type)}</h3>
+        <span class="report-card-meta">${created}</span>
+      </div>
+      <p class="report-card-description">${escapeHtml(report.description)}</p>
+      <div class="report-card-footer">
+        <span class="report-card-badge badge-${report.category}">${categories[report.category].label}</span>
+        <span class="report-card-votes">Bewertungen: ${report.confirmations + report.disputes}</span>
+      </div>
+    `;
+
+    card.addEventListener("click", () => {
+      const geom = normalizeGeometry(report);
+      let targetLatLng;
+      if (geom.kind === "circle") {
+        targetLatLng = L.latLng(geom.center.lat, geom.center.lng);
+      } else if (geom.kind === "polygon") {
+        const latSum = geom.points.reduce((sum, p) => sum + p.lat, 0);
+        const lngSum = geom.points.reduce((sum, p) => sum + p.lng, 0);
+        targetLatLng = L.latLng(latSum / geom.points.length, lngSum / geom.points.length);
+      } else {
+        targetLatLng = L.latLng(geom.lat, geom.lng);
+      }
+
+      map.setView(targetLatLng, 15);
+      
+      const layer = renderedLayers.find(l => {
+        const lGeom = l.getLatLng ? l.getLatLng() : (l.getBounds ? l.getBounds().getCenter() : null);
+        return lGeom && Math.abs(lGeom.lat - targetLatLng.lat) < 0.001 && Math.abs(lGeom.lng - targetLatLng.lng) < 0.001;
+      });
+      
+      if (layer) {
+        if (window.innerWidth <= 860) {
+          showDetailsSheet(report);
+        } else {
+          layer.openPopup();
+        }
+      }
+    });
+
+    reportsList.append(card);
+  });
 }

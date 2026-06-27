@@ -32,16 +32,20 @@
             <button class="app-mode-button is-active" type="button" data-app-mode="view">Anschauen</button>
             <button class="app-mode-button" type="button" data-app-mode="edit">Bearbeiten</button>
           </div>
+          <button id="themeToggleButton" class="icon-button" type="button" title="Farbschema wechseln" aria-label="Farbschema wechseln">
+            <span aria-hidden="true">🌙</span>
+          </button>
           <button id="locateButton" class="icon-button" type="button" title="Meine Position anzeigen" aria-label="Meine Position anzeigen">
             <span aria-hidden="true">⌖</span>
           </button>
-          <button id="resetButton" class="ghost-button" type="button">Demo zurücksetzen</button>
         </div>
       </header>
 
       <main class="workspace">
         <aside class="panel" aria-label="ScooterMap Steuerung">
-          <section class="panel-section">
+          <button id="closePanelButton" class="panel-close-button" type="button" aria-label="Schließen">×</button>
+          
+          <section id="reportFormSection" class="panel-section">
             <div class="section-title">
               <p>Neue Meldung</p>
               <h2>Eintrag melden</h2>
@@ -113,7 +117,7 @@
             </form>
           </section>
 
-          <section class="panel-section">
+          <section id="filterSection" class="panel-section">
             <div class="section-heading">
               <div class="section-title">
                 <p>Kartenansicht</p>
@@ -123,13 +127,34 @@
             </div>
             <div id="filters" class="filters"></div>
           </section>
+
+          <section id="reportListSection" class="panel-section">
+            <div class="section-title">
+              <p>Einträge</p>
+              <h2>Aktive Meldungen</h2>
+            </div>
+            <div id="reportsList" class="reports-list"></div>
+          </section>
         </aside>
 
         <section class="map-area" aria-label="ScooterMap Karte">
           <div id="map"></div>
+          <button id="filterToggleButton" class="icon-button floating-filter-btn" type="button" title="Filter öffnen" aria-label="Filter öffnen">
+            <span>⌆</span>
+          </button>
           <div id="mapHint" class="map-hint">Einträge anklicken, um Details zu sehen.</div>
         </section>
       </main>
+    </div>
+
+    <div id="sheetBackdrop" class="bottom-sheet-backdrop" hidden></div>
+
+    <div id="detailsSheet" class="bottom-sheet" hidden>
+      <div class="bottom-sheet-header">
+        <div class="bottom-sheet-handle"></div>
+        <button id="closeDetailsButton" class="close-button" type="button" aria-label="Schließen">×</button>
+      </div>
+      <div id="detailsContent" class="bottom-sheet-content"></div>
     </div>
 
     <script
