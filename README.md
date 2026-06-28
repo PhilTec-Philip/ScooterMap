@@ -43,7 +43,7 @@ Danach im Browser öffnen:
 http://localhost:3000
 ```
 
-Im LAN auf dem Handy verwendest du die IP des PCs, z.B.:
+Im LAN auf dem Handy oder PC verwendest du die IP des hostenden PCs, z.B.:
 
 ```text
 http://192.168.20.xxx:3000
@@ -69,4 +69,4 @@ Beim Öffnen der App werden vorhandene lokale Browser-Einträge automatisch in d
 
 iOS und moderne Browser erlauben Standortzugriff nur in sicheren Kontexten. `localhost` funktioniert auf dem eigenen Gerät, eine normale LAN-Adresse per `http://...` auf dem iPhone meistens nicht. Für echten Handy-Standort brauchst du später HTTPS, z.B. über einen Reverse Proxy mit Zertifikat.
 
-## &copy; PhilTec-Philip. Alle Rechte vorbehalten.
+** &copy; PhilTec-Philip. Alle Rechte vorbehalten. **
