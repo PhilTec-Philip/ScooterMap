@@ -68,3 +68,5 @@ Beim Öffnen der App werden vorhandene lokale Browser-Einträge automatisch in d
 ## Standort Auf Dem Handy
 
 iOS und moderne Browser erlauben Standortzugriff nur in sicheren Kontexten. `localhost` funktioniert auf dem eigenen Gerät, eine normale LAN-Adresse per `http://...` auf dem iPhone meistens nicht. Für echten Handy-Standort brauchst du später HTTPS, z.B. über einen Reverse Proxy mit Zertifikat.
+
+## &copy; PhilTec-Philip. Alle Rechte vorbehalten.
