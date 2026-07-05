@@ -69,4 +69,24 @@ Beim Öffnen der App werden vorhandene lokale Browser-Einträge automatisch in d
 
 iOS und moderne Browser erlauben Standortzugriff nur in sicheren Kontexten. `localhost` funktioniert auf dem eigenen Gerät, eine normale LAN-Adresse per `http://...` auf dem iPhone meistens nicht. Für echten Handy-Standort brauchst du später HTTPS, z.B. über einen Reverse Proxy mit Zertifikat.
 
+## Screenshots
+
+### Mobil
+
+![Meldung einreichen](screenshots/Mobile_TestMeldung.PNG)
+![Melde-Guide](screenshots/Mobile_MeldeGuide.PNG)
+![Karte – Hell](screenshots/Mobile_MapLight.PNG)
+![Karte – Dunkel](screenshots/Mobile_MapDark.PNG)
+![Gespeichert](screenshots/Mobile_Gespeichert.PNG)
+
+### Desktop
+
+![Meldung einreichen](screenshots/Desktop_MeldungEinreichen.png)
+![Testmeldung – Marker](screenshots/Desktop_TestMeldungMarker.png)
+![Testmeldung – Gebiet](screenshots/Desktop_TestMeldungGebiet.png)
+![Testmeldung – Freifläche](screenshots/Desktop_TestMeldungFreiFlaeche.png)
+![Karte – Hell](screenshots/Desktop_MapLight.png)
+![Karte – Dunkel](screenshots/Desktop_MapDark.png)
+![Karte – Satellit](screenshots/Desktop_MapSatelite.png)
+
 **&copy; PhilTec-Philip. Alle Rechte vorbehalten.**
