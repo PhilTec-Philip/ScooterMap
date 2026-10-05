@@ -2,25 +2,29 @@ const categories = {
   road: {
     label: "Fahrbahn",
     colorClass: "marker-road",
-    color: "#08734f",
+    icon: "mdi-road-variant",
+    fallbackColor: "#17784c",
     types: ["Schlagloch", "Unebener Asphalt", "Schotter", "Kopfsteinpflaster", "Baustelle"]
   },
   safety: {
     label: "Sicherheit",
     colorClass: "marker-safety",
-    color: "#246fa8",
+    icon: "mdi-shield-alert",
+    fallbackColor: "#1f6fb2",
     types: ["Gefährliche Kreuzung", "Schlechte Beleuchtung", "Häufige Kontrollstelle", "Unübersichtliche Stelle"]
   },
   community: {
     label: "Community",
     colorClass: "marker-community",
-    color: "#c77912",
+    icon: "mdi-account-group",
+    fallbackColor: "#a86a00",
     types: ["Treffpunkt", "Gute Aussicht", "Rollerwerkstatt", "Tankstellen-Tipp"]
   },
   warning: {
     label: "Warnung",
     colorClass: "marker-warning",
-    color: "#c2403b",
+    icon: "mdi-alert",
+    fallbackColor: "#c02b26",
     types: ["Diebstahl-Hinweis", "Überschwemmung", "Konfliktbereich", "Besondere Vorsicht empfohlen"]
   }
 };
@@ -28,6 +32,10 @@ const categories = {
 const storageKey = "scootermap.reports.v1";
 const votesKey = "scootermap.votes.v1";
 const voterKey = "scootermap.voter.v1";
+const themeKey = "scootermap.theme";
+const themeOrder = ["auto", "light", "dark"];
+const themeLabels = { auto: "automatisch", light: "hell", dark: "dunkel" };
+const themeIcons = { auto: "mdi-theme-light-dark", light: "mdi-white-balance-sunny", dark: "mdi-weather-night" };
 
 let reports = loadReports();
 let votes = loadVotes();
@@ -64,7 +72,7 @@ const typeSelect = document.querySelector("#type");
 const reportForm = document.querySelector("#reportForm");
 const selectedPosition = document.querySelector("#selectedPosition");
 const filters = document.querySelector("#filters");
-const reportCount = document.querySelector("#reportCount");
+const reportCountText = document.querySelector("#reportCountText");
 const toastEl = document.querySelector("#toast");
 let toastTimer = null;
 
@@ -97,32 +105,27 @@ const desktopSubmitButton = document.querySelector("#desktopSubmitButton");
 const detailsCard = document.querySelector("#detailsCard");
 const detailsContent = document.querySelector("#detailsContent");
 const closeDetailsButton = document.querySelector("#closeDetailsButton");
-const closePanelButton = document.querySelector("#closePanelButton");
+const closePanelButtons = document.querySelectorAll(".section-close-button");
 const filterToggleButton = document.querySelector("#filterToggleButton");
 const reportsList = document.querySelector("#reportsList");
 const themeToggleButton = document.querySelector("#themeToggleButton");
+const themeToggleIcon = document.querySelector("#themeToggleIcon");
+const satelliteToggle = document.querySelector("#satelliteToggle");
+const satelliteToggleIcon = document.querySelector("#satelliteToggleIcon");
+const satelliteToggleLabel = document.querySelector("#satelliteToggleLabel");
+const mapContainer = document.querySelector("#map");
 let currentStep = 0;
 
 init();
 
 function init() {
+  decorateZoomControl();
   populateTypeOptions();
   renderFilters();
+  initThemeToggle();
   renderReports();
   syncReportsFromApi();
   toggleSeverityVisibility();
-
-  // Dark Mode preference handling
-  const savedTheme = localStorage.getItem("scootermap.theme") || "light";
-  const isDark = savedTheme === "dark";
-  document.body.classList.toggle("dark-mode", isDark);
-  themeToggleButton.querySelector("span").textContent = isDark ? "☀️" : "🌙";
-
-  themeToggleButton.addEventListener("click", () => {
-    const currentIsDark = document.body.classList.toggle("dark-mode");
-    localStorage.setItem("scootermap.theme", currentIsDark ? "dark" : "light");
-    themeToggleButton.querySelector("span").textContent = currentIsDark ? "☀️" : "🌙";
-  });
 
   categorySelect.addEventListener("change", () => {
     populateTypeOptions();
@@ -149,7 +152,9 @@ function init() {
   });
 
   reportButton.addEventListener("click", startReporting);
-  closePanelButton.addEventListener("click", closeMobileDrawer);
+  closePanelButtons.forEach((button) => {
+  button.addEventListener("click", closeMobileDrawer);
+});
   filterToggleButton.addEventListener("click", toggleMobileFilters);
   closeDetailsButton.addEventListener("click", closeDetailsCard);
   detailsCard.addEventListener("click", (e) => {
@@ -157,7 +162,7 @@ function init() {
   });
   nextStepButton.addEventListener("click", nextStepHandler);
   backStepButton.addEventListener("click", backStepHandler);
-  document.querySelector("#satelliteToggle").addEventListener("click", toggleSatellite);
+  satelliteToggle.addEventListener("click", toggleSatellite);
 
   map.on("click", handleMapClick);
   map.on("mousemove", handleMapMove);
@@ -178,6 +183,94 @@ function init() {
   desktopSubmitButton.disabled = true;
 }
 
+/* Leaflet liefert die Zoom-Buttons als "+"/"-" - durch MDI-Icons ersetzen */
+function decorateZoomControl() {
+  mapContainer.querySelectorAll(".leaflet-control-zoom a").forEach((button, index) => {
+    const icon = index === 0 ? "mdi-plus" : "mdi-minus";
+    button.innerHTML = `<i class="mdi ${icon}" aria-hidden="true"></i>`;
+    button.setAttribute("aria-label", index === 0 ? "Hineinzoomen" : "Herauszoomen");
+  });
+}
+
+/* Farbschema: AUTO -> HELL -> DUNKEL */
+function getThemePreference() {
+  try {
+    const pref = localStorage.getItem(themeKey);
+    if (themeOrder.includes(pref)) return pref;
+  } catch {
+    /* localStorage nicht verfügbar */
+  }
+  return "auto";
+}
+
+function isDarkThemeActive() {
+  const explicit = document.documentElement.getAttribute("data-theme");
+  if (explicit) return explicit === "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function applyTheme(pref) {
+  if (pref === "auto") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", pref);
+  }
+
+themeToggleIcon.className = `mdi ${themeIcons[pref]}`;
+  themeToggleButton.title = `Farbschema: ${themeLabels[pref]}`;
+  themeToggleButton.setAttribute("aria-label", `Farbschema wechseln, aktuell ${themeLabels[pref]}`);
+  updateThemeColorMeta();
+}
+
+// Kategorie- und Geometriefarben kommen aus CSS-Variablen,
+// darum muss die Karte nach jedem Farbschemawechsel neu gezeichnet werden.
+function repaintForTheme() {
+  renderReports();
+  renderDraftShape();
+}
+
+function updateThemeColorMeta() {
+  const dark = isDarkThemeActive();
+  document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+    meta.setAttribute("content", dark ? "#14181c" : "#ffffff");
+  });
+}
+
+function initThemeToggle() {
+  applyTheme(getThemePreference());
+
+  themeToggleButton.addEventListener("click", () => {
+    const next = themeOrder[(themeOrder.indexOf(getThemePreference()) + 1) % themeOrder.length];
+    try {
+      localStorage.setItem(themeKey, next);
+    } catch {
+      /* localStorage nicht verfügbar */
+    }
+    applyTheme(next);
+    repaintForTheme();
+  });
+
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (getThemePreference() === "auto") {
+      applyTheme("auto");
+      repaintForTheme();
+    }
+  });
+}
+
+function categoryColor(categoryKey) {
+  return cssVar(`--cat-${categoryKey}`, categories[categoryKey].fallbackColor);
+}
+
+function cssVar(name, fallback = "") {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
+
+function icon(name) {
+  return `<i class="mdi ${name}" aria-hidden="true"></i>`;
+}
+
 function populateTypeOptions() {
   const selectedCategory = categorySelect.value;
   typeSelect.innerHTML = "";
@@ -196,6 +289,7 @@ function renderFilters() {
   Object.entries(categories).forEach(([key, category]) => {
     const row = document.createElement("div");
     row.className = "filter-row";
+    row.dataset.category = key;
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -210,11 +304,15 @@ function renderFilters() {
       renderReports();
     });
 
+    const swatch = document.createElement("span");
+    swatch.className = "filter-swatch";
+    swatch.setAttribute("aria-hidden", "true");
+
     const label = document.createElement("label");
     label.htmlFor = checkbox.id;
-    label.textContent = category.label;
+    label.innerHTML = `${icon(category.icon)} ${escapeHtml(category.label)}`;
 
-    row.append(checkbox, label);
+    row.append(checkbox, swatch, label);
     filters.append(row);
   });
 }
@@ -446,7 +544,8 @@ function renderDraftShape() {
   draftLayers.forEach((layer) => layer.remove());
   draftLayers = [];
 
-  const category = categories[categorySelect.value];
+  const color = categoryColor(categorySelect.value);
+  const outline = cssVar("--border", "#111111");
 
   if (selectedGeometry?.kind === "point") {
     draftLayers.push(
@@ -462,9 +561,9 @@ function renderDraftShape() {
     draftLayers.push(
       L.circle([selectedGeometry.center.lat, selectedGeometry.center.lng], {
         radius: selectedGeometry.radius,
-        color: category.color,
+        color,
         weight: 3,
-        fillColor: category.color,
+        fillColor: color,
         fillOpacity: 0.18,
         interactive: true,
         bubblingMouseEvents: false
@@ -475,7 +574,7 @@ function renderDraftShape() {
   if (polygonPoints.length > 0 && !selectedGeometry) {
     draftLayers.push(
       L.polyline(polygonPoints, {
-        color: category.color,
+        color,
         weight: 3,
         dashArray: "7 7"
       }).addTo(map)
@@ -484,9 +583,9 @@ function renderDraftShape() {
     polygonPoints.forEach((point, index) => {
       const pointLayer = L.circleMarker(point, {
           radius: 5,
-          color: "#fff",
+          color: outline,
           weight: 2,
-          fillColor: category.color,
+          fillColor: color,
           fillOpacity: 1,
           interactive: true,
           bubblingMouseEvents: false
@@ -510,9 +609,9 @@ function renderDraftShape() {
   if (selectedGeometry?.kind === "polygon") {
     draftLayers.push(
       L.polygon(selectedGeometry.points, {
-        color: category.color,
+        color,
         weight: 3,
-        fillColor: category.color,
+        fillColor: color,
         fillOpacity: 0.18,
         interactive: true,
         bubblingMouseEvents: false
@@ -596,13 +695,12 @@ function showSuccessConfirmation() {
   const successState = document.querySelector("#successState");
   const sectionTitle = document.querySelector("#reportFormSection .section-title");
   const formIntro = document.querySelector("#reportFormSection > .muted");
-  const closeBtn = document.querySelector("#closePanelButton");
 
   form.style.display = "none";
   if (sectionTitle) sectionTitle.style.display = "none";
   if (formIntro) formIntro.style.display = "none";
   successState.classList.remove("is-hidden");
-  closeBtn.style.display = "none";
+  closePanelButtons.forEach((button) => { button.style.display = "none"; });
 
   setTimeout(() => {
     cancelReporting();
@@ -610,7 +708,7 @@ function showSuccessConfirmation() {
     form.style.display = "";
     if (sectionTitle) sectionTitle.style.display = "";
     if (formIntro) formIntro.style.display = "";
-    closeBtn.style.display = "";
+    closePanelButtons.forEach((button) => { button.style.display = ""; });
   }, 1800);
 }
 
@@ -710,7 +808,7 @@ function renderReports() {
     renderedLayers.push(layer);
   });
 
-  reportCount.textContent = `${reports.length} ${reports.length === 1 ? "Eintrag" : "Einträge"}`;
+  reportCountText.textContent = `${reports.length} ${reports.length === 1 ? "Eintrag" : "Einträge"}`;
 
   // Populate desktop sidebar report list
   renderReportsList(visibleReports);
@@ -718,14 +816,14 @@ function renderReports() {
 
 function makeReportLayer(report) {
   const geometry = normalizeGeometry(report);
-  const category = categories[report.category];
+  const color = categoryColor(report.category);
 
   if (geometry.kind === "circle") {
     return L.circle([geometry.center.lat, geometry.center.lng], {
       radius: geometry.radius,
-      color: category.color,
+      color,
       weight: 3,
-      fillColor: category.color,
+      fillColor: color,
       fillOpacity: 0.2,
       interactive: true,
       bubblingMouseEvents: false
@@ -734,9 +832,9 @@ function makeReportLayer(report) {
 
   if (geometry.kind === "polygon") {
     return L.polygon(geometry.points, {
-      color: category.color,
+      color,
       weight: 3,
-      fillColor: category.color,
+      fillColor: color,
       fillOpacity: 0.2,
       interactive: true,
       bubblingMouseEvents: false
@@ -766,35 +864,10 @@ function makeIcon(categoryKey) {
   return L.divIcon({
     className: "scootermap-marker",
     html: `<div class="marker-dot ${categories[categoryKey].colorClass}"></div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
     popupAnchor: [0, -12]
   });
-}
-
-function makePopup(report) {
-  const wrapper = document.createElement("div");
-  const vote = votes[report.id];
-  const created = new Date(report.createdAt).toLocaleString("de-DE", {
-    dateStyle: "short",
-    timeStyle: "short"
-  });
-
-  wrapper.innerHTML = `
-    <p class="popup-title">${escapeHtml(report.type)}</p>
-    <p class="popup-meta">${categories[report.category].label} · ${shapeLabel(normalizeGeometry(report).kind)} · ${severityLabel(report.severity)} · ${created}</p>
-    <p class="popup-description">${escapeHtml(report.description)}</p>
-    <div class="popup-actions">
-      <button type="button" data-action="confirm" ${vote ? "disabled" : ""}>Existiert noch (${report.confirmations})</button>
-      <button type="button" data-action="dispute" ${vote ? "disabled" : ""}>Nicht mehr da (${report.disputes})</button>
-    </div>
-    ${vote ? `<p class="popup-voted">Du hast diesen Eintrag bereits bewertet.</p>` : ""}
-  `;
-
-  wrapper.querySelector('[data-action="confirm"]').addEventListener("click", () => updateVote(report.id, "confirmations"));
-  wrapper.querySelector('[data-action="dispute"]').addEventListener("click", () => updateVote(report.id, "disputes"));
-
-  return wrapper;
 }
 
 async function updateVote(id, field) {
@@ -1114,19 +1187,25 @@ function openMobileForm() {
 let satelliteActive = false;
 
 function toggleSatellite() {
-  const btn = document.querySelector("#satelliteToggle");
   satelliteActive = !satelliteActive;
   if (satelliteActive) {
     map.removeLayer(baseLayer);
     satelliteLayer.addTo(map);
-    btn.classList.add("is-active");
-    btn.innerHTML = "🗺 Kartenansicht";
+    satelliteToggle.classList.add("is-active");
+    satelliteToggleIcon.className = "mdi mdi-map";
+    satelliteToggleLabel.textContent = "Kartenansicht";
+    satelliteToggle.setAttribute("aria-pressed", "true");
   } else {
     map.removeLayer(satelliteLayer);
     baseLayer.addTo(map);
-    btn.classList.remove("is-active");
-    btn.innerHTML = "🛰 Satellitenansicht";
+    satelliteToggle.classList.remove("is-active");
+    satelliteToggleIcon.className = "mdi mdi-satellite-variant";
+    satelliteToggleLabel.textContent = "Satellitenansicht";
+    satelliteToggle.setAttribute("aria-pressed", "false");
   }
+  // Satellitenkacheln bleiben ungefiltert, die Kartendarstellung nicht.
+  mapContainer.classList.toggle("satellite-mode", satelliteActive);
+  renderReports();
 }
 
 function closeDetailsCard() {
@@ -1145,11 +1224,11 @@ function showDetailsCard(report) {
 
   detailsContent.innerHTML = `
     <h3 class="details-card-title">${escapeHtml(report.type)}</h3>
-    <p class="details-card-meta">${categories[report.category].label} · ${shapeLabel(normalizeGeometry(report).kind)} · ${severityLabel(report.severity)} · ${created}</p>
+    <p class="details-card-meta">${icon(categories[report.category].icon)} ${escapeHtml(categories[report.category].label)} &middot; ${escapeHtml(shapeLabel(normalizeGeometry(report).kind))} &middot; ${escapeHtml(severityLabel(report.severity))} &middot; ${created}</p>
     <p class="details-card-desc">${escapeHtml(report.description)}</p>
     <div class="details-card-actions">
-      <button type="button" class="confirm-vote-btn" data-action="confirm" ${vote ? "disabled" : ""}>Existiert noch (${report.confirmations})</button>
-      <button type="button" class="dispute-vote-btn" data-action="dispute" ${vote ? "disabled" : ""}>Nicht mehr da (${report.disputes})</button>
+      <button type="button" class="confirm-vote-btn" data-action="confirm" ${vote ? "disabled" : ""}>${icon("mdi-thumb-up")} Existiert noch (${report.confirmations})</button>
+      <button type="button" class="dispute-vote-btn" data-action="dispute" ${vote ? "disabled" : ""}>${icon("mdi-thumb-down")} Nicht mehr da (${report.disputes})</button>
     </div>
     ${vote ? `<p class="details-card-voted">Du hast diesen Eintrag bereits bewertet.</p>` : ""}
   `;
@@ -1178,8 +1257,8 @@ function renderReportsList(visibleReports) {
 
   if (visibleReports.length === 0) {
     const empty = document.createElement("p");
-    empty.className = "muted";
-    empty.textContent = "Keine Einträge für die aktiven Filter.";
+    empty.className = "empty-hint";
+    empty.innerHTML = `${icon("mdi-map-marker-question")} Keine Einträge für die aktiven Filter.`;
     reportsList.append(empty);
     return;
   }
@@ -1187,7 +1266,7 @@ function renderReportsList(visibleReports) {
   visibleReports.forEach((report) => {
     const card = document.createElement("div");
     card.className = "report-card";
-    
+
     const created = new Date(report.createdAt).toLocaleString("de-DE", {
       dateStyle: "short"
     });
@@ -1199,8 +1278,8 @@ function renderReportsList(visibleReports) {
       </div>
       <p class="report-card-description">${escapeHtml(report.description)}</p>
       <div class="report-card-footer">
-        <span class="report-card-badge badge-${report.category}">${categories[report.category].label}</span>
-        <span class="report-card-votes">Bewertungen: ${report.confirmations + report.disputes}</span>
+        <span class="report-card-badge badge-${report.category}">${icon(categories[report.category].icon)} ${escapeHtml(categories[report.category].label)}</span>
+        <span class="report-card-votes">${icon("mdi-message-check-outline")} ${report.confirmations + report.disputes}</span>
       </div>
     `;
 

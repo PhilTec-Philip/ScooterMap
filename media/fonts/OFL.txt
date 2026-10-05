@@ -1,0 +1,18 @@
+Self-hosted webfonts - SIL Open Font License 1.1
+=================================================
+
+JetBrains Mono
+(c) 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+License: SIL Open Font License 1.1 (https://openfontlicense.org)
+Files: jetbrains-mono-latin-*.woff2
+
+Share Tech Mono
+Copyright (c) 2011, Ray Larabie (typodermicfonts.com), Typodermic Fonts Inc.
+License: SIL Open Font License 1.1 (https://openfontlicense.org)
+File: share-tech-mono-latin-400-normal.woff2
+
+Die WOFF2-Dateien stammen aus den Fontsource-Paketen
+(https://fontsource.org, MIT-gepackte Distribution der OFL-Fonts).
+Die OFL erlaubt die Nutzung, Vervielfaeltigung und Einbindung in
+Webseiten unentgeltlich; diese Copyright- und Lizenzhinweise bleiben
+erhalten.

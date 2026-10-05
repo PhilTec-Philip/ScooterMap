@@ -2,8 +2,27 @@
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ScooterMap</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ScooterMap &ndash; Community-Karte für Roller, Mofa und Moped</title>
+    <meta
+      name="description"
+      content="ScooterMap: Community-Karte für Roller-, Mofa- und Mopedstrecken in Deutschland. Meldungen einreichen, Gebiete markieren, Warnungen filtern."
+    />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14181c" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      document.documentElement.classList.add("js");
+      (function () {
+        try {
+          var pref = localStorage.getItem("scootermap.theme");
+          if (pref === "light" || pref === "dark") {
+            document.documentElement.setAttribute("data-theme", pref);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="vendor/mdi/css/materialdesignicons.min.css" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -16,32 +35,45 @@
     <div class="app-shell">
       <header class="topbar">
         <div class="brand">
-          <span class="brand-mark" aria-hidden="true">S</span>
-          <div>
-            <p class="eyebrow">Deutschlandkarte für Roller, Mofa und Moped</p>
+          <div class="brand-text">
             <h1>ScooterMap</h1>
+            <p class="eyebrow">Community-Karte // Roller &middot; Mofa &middot; Moped</p>
           </div>
+          <span class="version-tag" title="Version">v1.3</span>
         </div>
+
         <form id="placeSearchForm" class="place-search" role="search" autocomplete="off">
-          <input id="placeSearchInput" type="search" placeholder="Ort suchen..." aria-label="Ort suchen" />
-          <button class="search-button" type="submit" aria-label="Ort suchen">⌕</button>
+          <span class="field-prompt" aria-hidden="true">&gt;</span>
+          <input
+            id="placeSearchInput"
+            type="search"
+            placeholder="Ort suchen..."
+            aria-label="Ort suchen"
+            spellcheck="false"
+          />
+          <button class="search-button icon-button" type="submit" title="Ort suchen" aria-label="Ort suchen">
+            <i class="mdi mdi-magnify" aria-hidden="true"></i>
+          </button>
           <div id="placeSearchResults" class="place-search-results" hidden></div>
         </form>
       </header>
 
       <main class="workspace">
         <aside class="panel is-hidden" aria-label="ScooterMap Steuerung">
-          <button id="closePanelButton" class="panel-close-button" type="button" aria-label="Schließen">×</button>
-          
           <section id="reportFormSection" class="panel-section">
             <div class="section-title">
-              <p>Neue Meldung</p>
+              <p>// Neue Meldung</p>
               <h2>Eintrag melden</h2>
+              <button class="section-close-button" type="button" title="Schließen" aria-label="Schließen">
+                <i class="mdi mdi-close" aria-hidden="true"></i>
+              </button>
             </div>
-            <p class="muted">Wähle eine Markierungsart und klicke auf die Karte, um eine Position festzulegen.</p>
+            <p class="muted">
+              Wähle eine Markierungsart und klicke auf die Karte, um eine Position festzulegen.
+            </p>
             <div id="successState" class="success-state is-hidden">
-              <div class="success-icon">✓</div>
-              <h2>Meldung gespeichert</h2>
+              <div class="success-icon"><i class="mdi mdi-check-circle" aria-hidden="true"></i></div>
+              <h3>Meldung gespeichert</h3>
               <p class="muted">Deine Meldung wurde erfolgreich erfasst.</p>
             </div>
 
@@ -50,13 +82,23 @@
                 <fieldset class="draw-modes">
                   <legend>Markierungsart</legend>
                   <div class="segmented-control" role="radiogroup" aria-label="Markierungsart">
-                    <button class="mode-button is-active" type="button" data-mode="point">Marker</button>
-                    <button class="mode-button" type="button" data-mode="circle">Gebiet</button>
-                    <button class="mode-button" type="button" data-mode="polygon">Frei</button>
+                    <button class="mode-button is-active" type="button" data-mode="point">
+                      <i class="mdi mdi-map-marker" aria-hidden="true"></i> Marker
+                    </button>
+                    <button class="mode-button" type="button" data-mode="circle">
+                      <i class="mdi mdi-radius" aria-hidden="true"></i> Gebiet
+                    </button>
+                    <button class="mode-button" type="button" data-mode="polygon">
+                      <i class="mdi mdi-shape-outline" aria-hidden="true"></i> Frei
+                    </button>
                   </div>
                   <div class="draw-actions">
-                    <button id="finishShapeButton" class="mini-button" type="button" disabled>Fläche abschließen</button>
-                    <button id="clearShapeButton" class="mini-button" type="button">Auswahl löschen</button>
+                    <button id="finishShapeButton" class="mini-button" type="button" disabled>
+                      <i class="mdi mdi-check-all" aria-hidden="true"></i> Fläche abschließen
+                    </button>
+                    <button id="clearShapeButton" class="mini-button" type="button">
+                      <i class="mdi mdi-eraser" aria-hidden="true"></i> Auswahl löschen
+                    </button>
                   </div>
                 </fieldset>
               </div>
@@ -102,34 +144,57 @@
               <div id="formStep3" class="form-step" data-step="3">
                 <label>
                   Beschreibung
-                  <textarea id="description" rows="4" maxlength="240" placeholder="Kurz, sachlich, keine Namen oder personenbezogenen Daten." required></textarea>
+                  <textarea
+                    id="description"
+                    rows="4"
+                    maxlength="240"
+                    placeholder="Kurz, sachlich, keine Namen oder personenbezogenen Daten."
+                    required
+                  ></textarea>
                 </label>
-                <strong id="selectedPosition" style="display:none"></strong>
+                <strong id="selectedPosition" class="position-readout" style="display: none"></strong>
               </div>
 
               <div id="mobileFormNav" class="form-nav">
-                <button id="backStepButton" class="mini-button" type="button" style="display:none">Zurück</button>
-                <button id="nextStepButton" class="primary-button" type="button">Weiter</button>
-                <button id="submitStepButton" class="primary-button" type="submit" style="display:none">Fertig</button>
+                <button id="backStepButton" class="mini-button" type="button" style="display: none">
+                  <i class="mdi mdi-chevron-left" aria-hidden="true"></i> Zurück
+                </button>
+                <button id="nextStepButton" class="primary-button" type="button">
+                  Weiter <i class="mdi mdi-chevron-right" aria-hidden="true"></i>
+                </button>
+                <button id="submitStepButton" class="primary-button" type="submit" style="display: none">
+                  <i class="mdi mdi-check" aria-hidden="true"></i> Fertig
+                </button>
               </div>
 
-              <button id="desktopSubmitButton" class="primary-button" type="submit">Fertig</button>
+              <button id="desktopSubmitButton" class="primary-button" type="submit">
+                <i class="mdi mdi-check" aria-hidden="true"></i> Meldung absenden
+              </button>
             </form>
           </section>
 
           <section id="filterSection" class="panel-section">
             <div class="section-title">
-              <p>Kartenansicht</p>
+              <p>// Kartenansicht</p>
               <h2>Filter</h2>
+              <button class="section-close-button" type="button" title="Schließen" aria-label="Schließen">
+                <i class="mdi mdi-close" aria-hidden="true"></i>
+              </button>
             </div>
             <div id="filters" class="filters"></div>
-            <button id="satelliteToggle" class="satellite-toggle" type="button">🛰 Satellitenansicht</button>
-            <span id="reportCount" class="report-count">0 Einträge</span>
+            <button id="satelliteToggle" class="satellite-toggle" type="button">
+              <i class="mdi mdi-satellite-variant" id="satelliteToggleIcon" aria-hidden="true"></i>
+              <span id="satelliteToggleLabel">Satellitenansicht</span>
+            </button>
+            <span class="report-count">
+              <i class="mdi mdi-database" aria-hidden="true"></i>
+              <span id="reportCountText">0 Einträge</span>
+            </span>
           </section>
 
           <section id="reportListSection" class="panel-section">
             <div class="section-title">
-              <p>Einträge</p>
+              <p>// Einträge</p>
               <h2>Aktive Meldungen</h2>
             </div>
             <div id="reportsList" class="reports-list"></div>
@@ -138,22 +203,51 @@
 
         <section class="map-area" aria-label="ScooterMap Karte">
           <div id="map"></div>
-          <button id="filterToggleButton" class="icon-button floating-btn" type="button" title="Filter öffnen" aria-label="Filter öffnen">
-            <span>☰</span>
+
+          <button
+            id="filterToggleButton"
+            class="icon-button floating-btn"
+            type="button"
+            title="Filter öffnen"
+            aria-label="Filter öffnen"
+          >
+            <i class="mdi mdi-filter-variant" aria-hidden="true"></i>
           </button>
-          <button id="locateButton" class="icon-button floating-btn" type="button" title="Meine Position anzeigen" aria-label="Meine Position anzeigen">
-            <span aria-hidden="true">⌖</span>
+          <button
+            id="locateButton"
+            class="icon-button floating-btn"
+            type="button"
+            title="Meine Position anzeigen"
+            aria-label="Meine Position anzeigen"
+          >
+            <i class="mdi mdi-crosshairs-gps" aria-hidden="true"></i>
           </button>
-          <button id="themeToggleButton" class="icon-button floating-btn" type="button" title="Farbschema wechseln" aria-label="Farbschema wechseln">
-            <span aria-hidden="true">🌙</span>
+          <button
+            id="themeToggleButton"
+            class="icon-button floating-btn"
+            type="button"
+            title="Farbschema wechseln"
+            aria-label="Farbschema wechseln"
+          >
+            <i class="mdi mdi-theme-light-dark" id="themeToggleIcon" aria-hidden="true"></i>
           </button>
           <button id="reportButton" class="report-btn" type="button">
-            <span aria-hidden="true">+</span> Meldung einreichen
+            <i class="mdi mdi-plus" aria-hidden="true"></i> Meldung einreichen
           </button>
+
           <div id="detailsCard" class="details-card is-hidden">
-            <button id="closeDetailsButton" class="panel-close-button" type="button" aria-label="Schließen">×</button>
+            <button
+              id="closeDetailsButton"
+              class="panel-close-button"
+              type="button"
+              title="Schließen"
+              aria-label="Schließen"
+            >
+              <i class="mdi mdi-close" aria-hidden="true"></i>
+            </button>
             <div id="detailsContent"></div>
           </div>
+
           <div id="toast" class="toast" hidden></div>
         </section>
       </main>
